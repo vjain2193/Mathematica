@@ -1,0 +1,293 @@
+/*****************************************************
+PURPOSE: To do the descritptive analysis for generation 1, 1979-1983
+We will do this analysis by race, preterm category and education
+DATA: 3/31/16 
+We also have deleted all the dates that have missing month - 2314 records;
+Days+month = 32111
+******************************************************/
+libname DT 'C:\Users\njain\Documents\Personal\Dissertation\Data_NJ\Final_data\Final_deidentified data';
+LIBNAME VA 'C:\Users\njain\Documents\Personal\Dissertation\Data_NJ\Matching data\Matching_762015';
+
+DATA link_table1;
+	SET DT.ANALYDATA;
+	SAMBWT =input(SAM_WT,comma9.);
+	MATBWT =input(BWT,comma9.);
+    dates_char = put(imputed_date,mmddYY10.);
+	BIRTHWT_F=input(BWT,best4.);
+	GEST_WK2=put(MAT_COMBGEST,4.0);
+
+/*Categorizing ethnicity*/
+	IF M_HISP EQ 0 AND M_RACE EQ 1 THEN RACEHISP = 0; /*NH WHITE*/
+	ELSE IF M_HISP EQ 0 AND M_RACE EQ 2 THEN RACEHISP = 1; /*NH BLLACK*/
+	ELSE IF M_HISP IN (1,2,3,4,5) THEN RACEHISP = 2; /*Hispanic*/
+	ELSE RACEHISP = 3; 
+
+
+RUN;
+DATA CHAP1;
+	SET link_table1;
+	S_Mm = input(substr(dates_char,1,2),8.);
+    S_Dd = input(substr(dates_char,4,2),8.);
+    S_Yy = input(substr(dates_char,7,4),8.); 
+    M_Mm = input(substr(MDOB,1,2),8.);
+    M_Dd = input(substr(MDOB,3,2),8.);
+    M_Yy = input(substr(MDOB,5,4),8.); 
+	RACEHISP2 = put (RACEHISP,2.0);
+
+/*using the MDY function, create the SAS date-these can be used in INTCK function later to calculate time intervals*/
+    SAM_Var = MDY(S_Mm,S_Dd,S_Yy); *Sample moms LMP;
+	MOM_VAR = MDY(M_Mm,M_Dd,M_Yy); *Samples DOB;
+
+/*Calculating weejs for PTB*/
+	SAM_combgest_final = intck('week', SAM_VAR, MOM_Var);
+RUN;
+/*converting this to final data set*/
+
+DATA DT.FINALDATA_ANL;
+	SET CHAP1;
+	/* convert character to numeric */
+BIRTHWT_F=input(SAM_WT,best4.);
+
+/* convert numeric to character */
+GEST_WK=put(SAM_combgest_final,4.0);
+RUN;
+
+DATA CHAP1A;
+	SET DT.FINALDATA_ANL;
+
+/*extremely preterm (<28 weeks) very preterm (28 to <32 weeks) moderate to late preterm (32 to <37 weeks).*/
+
+	IF SAM_combgest_final < 20 | SAM_combgest_final > 47 THEN SAM_PTB4= .;
+	ELSE IF 20 < SAM_combgest_final <32 THEN SAM_PTB4 = 0;
+	ELSE IF 32 <= SAM_combgest_final <37 THEN SAM_PTB4 = 1;
+	ELSE IF 37 <= SAM_combgest_final <=47 THEN SAM_PTB4 = 2;
+
+/*Just to create PTB and non-PTB*/
+	IF 20 < GEST_WK < 38 THEN PTB_CAT1 = 1;
+	ELSE IF 38 <= GEST_WK <=47 THEN PTB_CAT1 = 0;
+	ELSE PTB_CAT1 = 2;
+
+
+/* Preterm categories: early preterm (less than 34 weeks gestation), 
+very preterm (34 to 36 weeks gestation), and  preterm (lt 37 weeks gestation)*/
+
+    IF GEST_WK < 20 | GEST_WK > 47 THEN SAM_PTB3= 99;
+	ELSE IF 20 < GEST_WK < 33 THEN SAM_PTB3 = 0;
+	ELSE IF 33 <= GEST_WK <38 THEN SAM_PTB3 = 1;
+	ELSE IF 38 <= GEST_WK <=47 THEN SAM_PTB3 = 2;
+
+/*Using race/ethnicity from generation 2 and using it for generation 1*/
+MAT_race = .;
+  if M_RACE EQ '1' then MAT_MRACE = 1; /* White */
+  else if M_RACE = '2' then MAT_MRACE = 2; /* Black */
+  else MAT_MRACE = '3';  /* NH other */
+
+
+/* WEIGHT */
+SAM_LBW= .;
+  if '0' < SAM_WT < '2500' then SAM_LBW = 1;
+  else if '2500' <= SAM_WT < '9999' then SAM_LBW = 0;  
+  else SAM_LBW = 2;
+
+/* recode maternal age */
+SAM_MAGE3 = .;
+  if '12' <= SAM_AGEMOM < '20' then SAM_MAGE3 = 1;
+  else if '20' <= SAM_AGEMOM < '25' then SAM_MAGE3 = 2;
+  else if '25' <= SAM_AGEMOM < '30' then SAM_MAGE3 = 3;
+  else if '30' <= SAM_AGEMOM < '35' then SAM_MAGE3 = 4;
+  else if '35' <= SAM_AGEMOM < '55' then SAM_MAGE3 = 5;
+  else SAM_MAGE3 = 6;
+
+/* recode maternal education */
+SAM_meduc3 = .;
+  IF 0 <= SAM_EDUMOM < 12 THEN SAM_meduc3 = 0;
+  else if SAM_EDUMOM eq '12' THEN SAM_meduc3 = 1; 
+  else if '12' < SAM_EDUMOM < '99' then SAM_meduc3 = 2;
+  else SAM_meduc3 = 3;
+
+/*Using race/ethnicity from generation 2 and using it for generation 1*/
+
+	IF M_HISP EQ 0 AND M_RACE EQ 1 THEN RACEHISP = 0; /*NH WHITE*/
+	ELSE IF M_HISP EQ 0 AND M_RACE EQ 2 THEN RACEHISP = 1; /*NH BLLACK*/
+	ELSE IF M_HISP IN (1,2,3,4,5) THEN RACEHISP = 2; /*Hispanic*/
+	ELSE RACEHISP = 3; 
+
+/* recode marital status 0=yes married 1=not married*/
+SAM_married = .;
+  if SAM_MARITAL = 1 then SAM_married = 0;
+  else if SAM_MARITAL = 2 then SAM_married = 1;        
+  else SAM_married = 2;
+
+/* recode race */
+SAM_LBW= .;
+  if '0' < SAM_WT < '2500' then SAM_LBW = 1;
+  else if '2500' <= SAM_WT < '9999' then SAM_LBW = 0;  
+
+/* recode maternal age */
+SAM_MAGE3 = .;
+  if '12' <= SAM_AGEMOM < '20' then SAM_MAGE3 = 1;
+  else if '20' <= SAM_AGEMOM < '25' then SAM_MAGE3 = 2;
+  else if '25' <= SAM_AGEMOM < '30' then SAM_MAGE3 = 3;
+  else if '30' <= SAM_AGEMOM < '35' then SAM_MAGE3 = 4;
+  else if '35' <= SAM_AGEMOM < '200' then SAM_MAGE3 = 5;
+  else SAM_MAGE3 = 6;
+
+/* recode maternal education */
+SAM_meduc = .;
+  IF '0' <= SAM_EDUMOM < '9' THEN SAM_meduc = 1;
+  ELSE IF '9' <= SAM_EDUMOM < '12' THEN SAM_meduc = 2;
+  else if SAM_EDUMOM eq '12' THEN SAM_meduc = 3; 
+  else if '12' < SAM_EDUMOM <= '15' then SAM_meduc = 4;
+  else if '15' < SAM_EDUMOM < '99' then SAM_meduc = 5;
+  else SAM_meduc = 6;
+
+SAM_Feduc = .;
+  IF '0' <= SAM_EDUDAD < '9' THEN SAM_Feduc = 1;
+  ELSE IF 9 <= SAM_EDUDAD < '12' THEN SAM_Feduc = 2;
+  else if SAM_EDUDAD eq '12' THEN SAM_Feduc = 3; 
+  else if '12' < SAM_EDUDAD <= '15' then SAM_Feduc = 4;
+  else if '15' < SAM_EDUDAD < '99' then SAM_Feduc = 5;
+  else IF SAM_EDUDAD = '&&' OR SAM_EDUDAD = 99 then SAM_Feduc = 6;
+
+/*FOREIGN BORN*/
+
+  IF '00' <= SAM_BIRPLMOM < '52' THEN FOREIGN = 0;
+  ELSE IF '52' <= SAM_BIRPLMOM < '99' THEN FOREIGN = 1;
+
+
+/* code Kessner's Index of adequacy of prenatal care */
+  /* note this is modified - it does not account for
+     the place of delivery (private obstetrical service req'd
+     for adequate care) */
+
+SAM_Kessner = 2;
+  if GEST_WK=99 or GEST_WK=. or SAM_PNC=. or SAM_PNCVST_TOTAL=. then SAM_Kessner = 4;
+  else if (SAM_PNC > 6) or
+    ((14 <= GEST_WK <= 21) and (SAM_PNCVST_TOTAL = . or SAM_PNCVST_TOTAL = 0 or SAM_PNC=.)) or
+    ((22 <= GEST_WK <= 29) and (SAM_PNCVST_TOTAL = . or SAM_PNCVST_TOTAL <= 1)) or
+    ((30 <= GEST_WK <= 31) and (SAM_PNCVST_TOTAL = . or SAM_PNCVST_TOTAL <= 2)) or
+    ((32 <= GEST_WK <= 33) and (SAM_PNCVST_TOTAL = . or SAM_PNCVST_TOTAL <= 3)) or
+    (GEST_WK >= 34 and (SAM_PNCVST_TOTAL = . or SAM_PNCVST_TOTAL <= 4)) then SAM_Kessner = 3;
+  else if (SAM_PNC <= 3) and
+    (GEST_WK <= 13 and (SAM_PNCVST_TOTAL = . or SAM_PNCVST_TOTAL >= 1)) or
+    ((14 <= GEST_WK <= 17) and SAM_PNCVST_TOTAL >= 2) or
+    ((18 <= GEST_WK <= 21) and SAM_PNCVST_TOTAL >= 3) or
+    ((22 <= GEST_WK <= 25) and SAM_PNCVST_TOTAL >= 4) or
+    ((26 <= GEST_WK <= 29) and SAM_PNCVST_TOTAL >= 5) or
+    ((30 <= GEST_WK <= 31) and SAM_PNCVST_TOTAL >= 6) or
+    ((32 <= GEST_WK <= 33) and SAM_PNCVST_TOTAL >= 7) or
+    ((34 <= GEST_WK <= 35) and SAM_PNCVST_TOTAL >= 8) or
+    (GEST_WK >= 36 and SAM_PNCVST_TOTAL >= 9) then SAM_Kessner = 1;  
+
+RUN;
+
+/*************Regression analysis****************/
+
+PROC LOGISTIC DATA = BIN_REG descending;
+class RACEHISP(param=ref ref="0"); 
+MODEL PTB_CAT1 = RACEHISP;
+RUN; 
+PROC LOGISTIC DATA = BIN_REG descending;
+class SAM_MAGE3(param=ref ref="3"); 
+MODEL PTB_CAT1 = SAM_MAGE3;
+RUN; 
+PROC LOGISTIC DATA = BIN_REG descending;
+class SAM_meduc(param=ref ref="3"); 
+MODEL PTB_CAT1 = SAM_meduc;
+RUN; 
+PROC LOGISTIC DATA = BIN_REG descending;
+class SAM_Feduc(param=ref ref="4"); 
+MODEL PTB_CAT1 = SAM_Feduc;
+RUN; 
+PROC LOGISTIC DATA = BIN_REG descending;
+class SAM_married (param=ref ref="0"); 
+MODEL PTB_CAT1 =  SAM_married;
+RUN; 
+PROC LOGISTIC DATA = BIN_REG descending;
+class SAM_LBW (param=ref ref="0"); 
+MODEL PTB_CAT1 =  SAM_LBW;
+RUN; 
+
+PROC LOGISTIC DATA = BIN_REG descending;
+class SAM_Kessner(param=ref ref="1"); 
+MODEL PTB_CAT1 =  SAM_Kessner;
+RUN; 
+
+/**********Adjusted stepwise OR**********/
+PROC LOGISTIC DATA = BIN_REG descending;
+class SAM_meduc (param=ref ref="3")
+	  RACEHISP(param=ref ref="0");
+MODEL PTB_CAT1 =  SAM_meduc RACEHISP;
+RUN; 
+PROC LOGISTIC DATA = BIN_REG descending;
+class SAM_meduc (param=ref ref="3")
+	  SAM_MAGE3(param=ref ref="3"); 	  
+MODEL PTB_CAT1 = SAM_meduc SAM_MAGE3;
+RUN; 
+PROC LOGISTIC DATA = BIN_REG descending;
+class SAM_meduc (param=ref ref="3")
+	  SAM_Feduc param=ref ref="3");
+MODEL PTB_CAT1 =  SAM_meduc SAM_Feduc;
+RUN; 
+PROC LOGISTIC DATA = BIN_REG descending;
+class  SAM_meduc (param=ref ref="3");
+MODEL PTB_CAT1 = SAM_meduc SAM_married;
+RUN; 
+PROC LOGISTIC DATA = BIN_REG descending;
+class SAM_meduc (param=ref ref="3")
+	  SAM_Kessner(param=ref ref="1"); 	  
+MODEL PTB_CAT1 = SAM_meduc SAM_Kessner;
+RUN; 
+PROC LOGISTIC DATA = BIN_REG descending;
+class SAM_meduc (param=ref ref="3");
+MODEL PTB_CAT1 = SAM_meduc SAM_LBW;
+RUN; 
+/*****Final Model********/
+
+PROC LOGISTIC DATA = BIN_REG descending;
+class SAM_MAGE3(param=ref ref="3") 
+	  SAM_meduc (param=ref ref="4")
+	  SAM_Feduc (param=ref ref="4")
+	  SAM_Kessner (param=ref ref="1");
+WHERE RACEHISP = '0';
+MODEL PTB_CAT1 = SAM_MAGE3 SAM_meduc SAM_Feduc SAM_married SAM_Kessner;
+RUN; 
+
+PROC LOGISTIC DATA = BIN_REG descending;
+class SAM_MAGE3(param=ref ref="3") 
+	  SAM_meduc (param=ref ref="4")
+	  SAM_Feduc (param=ref ref="4")
+	  SAM_Kessner (param=ref ref="1");
+WHERE RACEHISP = '1';
+MODEL PTB_CAT1 = SAM_MAGE3 SAM_meduc SAM_Feduc SAM_married SAM_Kessner;
+RUN; 
+
+PROC LOGISTIC DATA = BIN_REG descending;
+class SAM_MAGE3(param=ref ref="3") 
+	  SAM_meduc (param=ref ref="4")
+	  SAM_Feduc (param=ref ref="4")
+	  SAM_Kessner (param=ref ref="1");
+WHERE RACEHISP = '2';
+MODEL PTB_CAT1 = SAM_MAGE3 SAM_meduc SAM_Feduc SAM_married SAM_Kessner;
+RUN;  
+
+/**trying a diff way**/
+proc logistic data = BIN_REG desc;
+class SAM_meduc (ref = '4') SAM_MAGE3 (ref = '3') / param=ref;
+model PTB_CAT1 = SAM_meduc SAM_MAGE3;
+contrast 'SAM_meduc = 4 SAM_meduc 4 v 1' SAM_meduc 1    /e estimate = parm;
+contrast 'SAM_meduc = 4 SAM_meduc 4 v 2' SAM_meduc 0 1  /e estimate = parm;
+contrast 'SAM_meduc = 4 SAM_meduc 4 v 3' SAM_meduc 1 -1 /e estimate = parm;
+contrast 'SAM_meduc = 4 SAM_meduc 4 v 5' SAM_meduc 1 -1 /e estimate = parm;
+contrast 'SAM_meduc = 4 SAM_meduc 4 v 6' SAM_meduc 1 -1 /e estimate = parm;
+contrast 'SAM_MAGE3 = 3 SAM_MAGE3 3 v 1' SAM_MAGE3 1    /e estimate = parm;
+contrast 'SAM_MAGE3 = 3 SAM_MAGE3 3 v 2' SAM_MAGE3 0 1  /e estimate = parm;
+contrast 'SAM_MAGE3 = 3 SAM_MAGE3 3 v 4' SAM_MAGE3 1 -1 /e estimate = parm;
+contrast 'SAM_MAGE3 = 3 SAM_MAGE3 3 v 5' SAM_MAGE3 1 -1 /e estimate = parm;
+contrast 'SAM_MAGE3 = 3 SAM_MAGE3 3 v 6' SAM_MAGE3 1 -1 /e estimate = parm;
+RUN;
+PROC LOGISTIC DATA = BIN_REG descending;
+class SAM_MAGE3(param=ref ref="3") 
+	  SAM_meduc (param=ref ref="4");
+MODEL PTB_CAT1 = SAM_meduc SAM_MAGE3;
+RUN;

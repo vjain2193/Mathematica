@@ -1,0 +1,1064 @@
+/*****************************************************
+PURPOSE: To do the descritptive analysis (Table 1 & 2) for generation 1, 1979-1983
+We will do this analysis by race, preterm category and education including missings
+DATA: 3/31/16 
+******************************************************/
+libname DT 'C:\Users\njain\Documents\Personal\Dissertation\Final data creation\Final_data\Final_deidentified data';
+LIBNAME VA 'C:\Users\njain\Documents\Personal\Dissertation\Final data creation\Matching data\Matching_762015';
+
+PROC FORMAT;
+  value fy1n0x   	0="No"  
+					1="Yes";
+  value fpresabs 	0="Absent" 
+					1="Present";
+  value fPTBRE 		0="Early Preterm: 20-32" 
+		 	   		1="Late Preterm: 33-37" 
+			   		2="Term: 38-47" ;
+  value fmage6x     1="<20 yrs"  
+					2="20-<25 yrs"  
+					3="25-<30 yrs"  
+					4="30-<35 yrs"  
+					5="35-200 yrs" 
+					6 = "Missing";
+  value feduc6x 	1="0-8 yrs"  	
+					2="9-11 yrs"   
+					3="12 yrs"
+               		4="13-15 yrs"  
+					5="16+ yrs"    
+					6="unknown";
+  value fmeduc3x 	1="< HS"  
+					2="HS"  
+					3="> HS";
+  value $fadeq  	1="adequate"      
+					2="intermediate"
+               		3="inadequate"    
+					4="Unknown";
+  value $RACEETH  	0="White NH"      
+					1="Black NH"
+               		2="Hispanic"    
+					3="Others";
+RUN;
+/*USING DT.ANALYDATA this as final data, not VA.finalrecode_link*/
+
+DATA link1;
+	SET DT.ANALYDATA;
+
+/*extremely preterm (<28 weeks)
+very preterm (28 to <32 weeks)
+moderate to late preterm (32 to <37 weeks).*/
+
+	IF MAT_COMBGEST < 20 | MAT_COMBGEST > 47 THEN delete;
+	ELSE IF 20 < MAT_COMBGEST <32 THEN MAT_PTB4 = 0;
+	ELSE IF 32 <= MAT_COMBGEST <37 THEN MAT_PTB4 = 1;
+	ELSE IF 37 <= MAT_COMBGEST <=47 THEN MAT_PTB4 = 2;
+
+/*Just to create PTB and non-PTB*/
+
+	IF 20 < MAT_COMBGEST < 38 THEN PTB_CAT = 1;
+	ELSE IF 38 <= MAT_COMBGEST <=47 THEN PTB_CAT = 0;
+	else delete;
+
+/*Using race/ethnicity from generation 2 and using it for generation 1*/
+
+	IF M_HISP EQ 0 AND M_RACE EQ 1 THEN RACEHISP = 0; /*NH WHITE*/
+	ELSE IF M_HISP EQ 0 AND M_RACE EQ 2 THEN RACEHISP = 1; /*NH BLLACK*/
+	ELSE IF M_HISP IN (1,2,3,4,5) THEN RACEHISP = 2; /*Hispanic*/
+	ELSE RACEHISP = 3; 
+
+/* WEIGHT */
+ MAT_LBW= .;
+  if '0' < BWT < '2500' then MAT_LBW = 1;
+  else if '2500' <= BWT < '9999' then MAT_LBW = 0;  
+
+/* recode maternal age: Per DD there are no mothers over 35 years so 6 is missing */
+MAT_MAGE6 = .;
+  if mage_cat in (4, 5) then MAT_MAGE6 = 1;
+  else if mage_cat eq 6 then MAT_MAGE6 = 2;
+  else if mage_cat eq 7 then MAT_MAGE6 = 3;
+  else if mage_cat eq 8 then MAT_MAGE6 = 4;
+  else if 9 <=mage_cat <=19 then MAT_MAGE6 = 5;
+  else MAT_MAGE6 = 6;
+
+/* recode maternal and paternal education */
+MAT_meduc = .;
+  IF 0 <= M_EDU < 9 THEN MAT_meduc = 1;
+  ELSE IF 9 <= M_EDU < 12 THEN MAT_meduc = 2;
+  else if M_EDU eq 12 THEN MAT_meduc = 3; 
+  else if 12 < M_EDU <= 15 then MAT_meduc = 4;
+  else if 15 < M_EDU < 99 then MAT_meduc = 5;
+  else MAT_meduc = 6;
+
+/* recode maternal education */
+MAT_meduc3 = .;
+  IF 0 <= M_EDU < 12 THEN MAT_meduc3 = 1;
+  else if M_EDU eq 12 THEN MAT_meduc3 = 2; 
+  else if 12 < M_EDU < 99 then MAT_meduc3 = 3;
+  else MAT_meduc3 = 4;
+
+MAT_Feduc = .;
+  IF 0 <= F_EDU < 9 THEN MAT_Feduc = 1;
+  ELSE IF 9 <= F_EDU < 12 THEN MAT_Feduc = 2;
+  else if F_EDU eq 12 THEN MAT_Feduc = 3; 
+  else if 12 < F_EDU <= 15 then MAT_Feduc = 4;
+  else if 15 < F_EDU < 99 then MAT_Feduc = 5;
+  else MAT_Feduc = 6;
+
+MAT_Feduc3 = .;
+  IF 0 <= F_EDU < 12 THEN MAT_Feduc3 = 1;
+  else if F_EDU eq 12 THEN MAT_Feduc3 = 2; 
+  else if 12 < F_EDU < 99 then MAT_Feduc3 = 3;
+  else MAT_Feduc3 = 4;
+
+/* recode marital status 1 = married 0 = no*/
+MAT_married = .;
+  if M_MARRIED = 1 then MAT_married = 1;
+  else if M_MARRIED = 2 then MAT_married = 0;  
+
+/* code Kessner's Index of adequacy of prenatal care */
+  /* note this is modified - it does not account for
+     the place of delivery (private obstetrical service req'd
+     for adequate care) */
+
+MAT_Kessner = 2;
+  if MAT_COMBGEST=99 or MAT_COMBGEST=. or MNTH_PREN_CARE =. or
+     NUM_PREN_CARE  =. then MAT_Kessner = .;
+  else if (MNTH_PREN_CARE > 6) or
+    ((14 <= MAT_COMBGEST <= 21) and (NUM_PREN_CARE   = . or NUM_PREN_CARE   = 0 or MNTH_PREN_CARE =.)) or
+    ((22 <= MAT_COMBGEST <= 29) and (NUM_PREN_CARE   = . or NUM_PREN_CARE   <= 1)) or
+    ((30 <= MAT_COMBGEST <= 31) and (NUM_PREN_CARE   = . or NUM_PREN_CARE   <= 2)) or
+    ((32 <= CLIN_EST_GEST <= 33) and (NUM_PREN_CARE   = . or NUM_PREN_CARE   <= 3)) or
+    (MAT_COMBGEST >= 34 and (NUM_PREN_CARE   = . or NUM_PREN_CARE   <= 4)) then MAT_Kessner = 3;
+  else if (MNTH_PREN_CARE  <= 3) and
+    (MAT_combgest <= 13 and (NUM_PREN_CARE   = . or NUM_PREN_CARE   >= 1)) or
+    ((14 <= MAT_COMBGEST <= 17) and NUM_PREN_CARE   >= 2) or
+    ((18 <= MAT_COMBGEST <= 21) and NUM_PREN_CARE   >= 3) or
+    ((22 <= MAT_COMBGEST <= 25) and NUM_PREN_CARE   >= 4) or
+    ((26 <= MAT_COMBGEST <= 29) and NUM_PREN_CARE   >= 5) or
+    ((30 <= MAT_COMBGEST <= 31) and NUM_PREN_CARE   >= 6) or
+    ((32 <= MAT_COMBGEST <= 33) and NUM_PREN_CARE   >= 7) or
+    ((34 <= MAT_COMBGEST <= 35) and NUM_PREN_CARE   >= 8) or
+    (MAT_COMBGEST >= 36 and NUM_PREN_CARE   >= 9) then MAT_Kessner = 1;
+
+SAM_meduc = .;
+  IF 0 <= SAM_EDUMOM < 12 THEN SAM_meduc3 = 0;
+  else if SAM_EDUMOM eq '12' THEN SAM_meduc3 = 1; 
+  else if '12' < SAM_EDUMOM < '99' then SAM_meduc3 = 2;
+  else SAM_meduc3 = 3;
+
+SAM_meduc = .;
+  IF 0 <= SAM_EDUMOM < 9 THEN SAM_meduc = 1;
+  else if 9 <= SAM_EDUMOM < 12 THEN SAM_meduc = 2;
+  else if SAM_EDUMOM eq 12 THEN SAM_meduc = 3; 
+  else if 12 < SAM_EDUMOM <= 15 then SAM_meduc = 4;
+  else if 15 < SAM_EDUMOM < 99 then SAM_meduc = 5;
+  else SAM_meduc = 6;
+RUN;
+
+DATA link2;
+	SET link1;
+	/* convert character to numeric */
+BIRTHWT_F2=input(BWT,best4.);
+
+/* convert numeric to character */
+GEST_WK2=put(MAT_COMBGEST,2.0);
+RACEHISP2 = put (RACEHISP,2.0);
+RUN;
+PROC FREQ DATA = LINK2;
+TABLES ptb_cat*racehisp;
+RUN;
+
+/**************************************USED TO CALCULATE PERCENTILE FOR SGA
+ODS TAGSETS.EXCELXP
+file='C:\Users\njain\Documents\Personal\Dissertation\SGA\GESTBYMALE.xls'
+STYLE=minimal
+OPTIONS ( Orientation = 'landscape'
+FitToPage = 'yes'
+Pages_FitWidth = '1'
+Pages_FitHeight = '100' );
+proc means data=CONVERT2 mean median max std P10 P90;
+WHERE SEX = '1';
+class GEST_WK2 RACEHISP2 ;
+   var BIRTHWT_F2;
+FORMAT RACEHISP2 $RACEETH.;
+run; 
+ods tagsets.excelxp close;
+
+ODS TAGSETS.EXCELXP
+file='C:\Users\njain\Documents\Personal\Dissertation\SGA\GESTBYFEMALE.xls'
+STYLE=minimal
+OPTIONS ( Orientation = 'landscape'
+FitToPage = 'yes'
+Pages_FitWidth = '1'
+Pages_FitHeight = '100' );
+proc means data=CONVERT2 mean median max std P10 P90;
+WHERE SEX = '2';
+class GEST_WK2 RACEHISP2 ;
+   var BIRTHWT_F2;
+FORMAT RACEHISP2 $RACEETH.;
+run;
+ods tagsets.excelxp close;
+
+proc means data=CONVERT2 mean median max std P5 P10 P25 P50 P75 P90 P95;
+   class GEST_WK2 SEX RACEHISP;
+   var BIRTHWT_F2;
+run;
+*************************************************************************************/
+DATA link3;
+	SET link2;
+
+/*White NH Males*/
+pregoutwm= '0' ;
+
+if (GEST_WK2 le 22 and sex = '1' and racehisp = '0' and BIRTHWT_F2 le 311) 									then pregoutwm='2' ;
+else if (GEST_WK2 le 22 and sex = '1' and racehisp = '0' and (BIRTHWT_F2 ge 312 and BIRTHWT_F2 le 3773))    then pregoutwm='1' ;
+else if (GEST_WK2 le 22 and sex = '1' and racehisp = '0' and BIRTHWT_F2 gt 3773)						    then pregoutwm='3' ;
+
+else if (GEST_WK2=23 and sex = '1' and racehisp = '0' and BIRTHWT_F2 le 503)							    then pregoutwm='2' ;
+else if (GEST_WK2=23 and sex = '1' and racehisp = '0' and (BIRTHWT_F2 ge 504 and BIRTHWT_F2 le 3655))      	then pregoutwm='1' ;
+else if (GEST_WK2=23 and sex = '1' and racehisp = '0' and BIRTHWT_F2 gt 3655) 								then pregoutwm='3' ;
+
+else if (GEST_WK2=24 and sex = '1' and racehisp = '0' and BIRTHWT_F2 le 489)							    then pregoutwm='2' ;
+else if (GEST_WK2=24 and sex = '1' and racehisp = '0' and (BIRTHWT_F2 ge 490 and BIRTHWT_F2 le 2537))      	then pregoutwm='1' ;
+else if (GEST_WK2=24 and sex = '1' and racehisp = '0' and BIRTHWT_F2 gt 2537)							    then pregoutwm='3' ;
+
+else if (GEST_WK2=25 and sex = '1' and racehisp = '0' and BIRTHWT_F2 le 668)							    then pregoutwm='2' ;
+else if (GEST_WK2=25 and sex = '1' and racehisp = '0' and (BIRTHWT_F2 ge 669 and BIRTHWT_F2 le 3882))      	then pregoutwm='1' ;
+else if (GEST_WK2=25 and sex = '1' and racehisp = '0' and BIRTHWT_F2 gt 3882)							    then pregoutwm='3' ;
+
+else if (GEST_WK2=26 and sex = '1' and racehisp = '0' and BIRTHWT_F2 le 587)							    then pregoutwm='2' ;
+else if (GEST_WK2=26 and sex = '1' and racehisp = '0' and (BIRTHWT_F2 ge 588 and BIRTHWT_F2 le 3055))     	then pregoutwm='1' ;
+else if (GEST_WK2=26 and sex = '1' and racehisp = '0' and BIRTHWT_F2 gt 3055)						    	then pregoutwm='3' ;
+
+else if (GEST_WK2=27 and sex = '1' and racehisp = '0' and BIRTHWT_F2 le 736)							    then pregoutwm='2' ;
+else if (GEST_WK2=27 and sex = '1' and racehisp = '0' and (BIRTHWT_F2 ge 737 and BIRTHWT_F2 le 3350))	    then pregoutwm='1' ;
+else if (GEST_WK2=27 and sex = '1' and racehisp = '0' and BIRTHWT_F2 gt 3350) 								then pregoutwm='3' ;
+
+else if (GEST_WK2=28 and sex = '1' and racehisp = '0' and BIRTHWT_F2 le 755)							    then pregoutwm='2' ;
+else if (GEST_WK2=28 and sex = '1' and racehisp = '0' and (BIRTHWT_F2 ge 756 and BIRTHWT_F2 le 3835))       then pregoutwm='1' ;
+else if (GEST_WK2=28 and sex = '1' and racehisp = '0' and BIRTHWT_F2 gt 3835) 						    	then pregoutwm='3' ;
+
+else if (GEST_WK2=29 and sex = '1' and racehisp = '0' and BIRTHWT_F2 le 949)								then pregoutwm='2' ;
+else if (GEST_WK2=29 and sex = '1' and racehisp = '0' and (BIRTHWT_F2 ge 950 and BIRTHWT_F2 le 3479))    	then pregoutwm='1' ;
+else if (GEST_WK2=29 and sex = '1' and racehisp = '0' and BIRTHWT_F2 gt 3479)						    	then pregoutwm='3' ;
+
+else if (GEST_WK2=30 and sex = '1' and racehisp = '0' and BIRTHWT_F2 le 1034)								then pregoutwm='2' ;
+else if (GEST_WK2=30 and sex = '1' and racehisp = '0' and (BIRTHWT_F2 ge 1035 and BIRTHWT_F2 le 3530))    	then pregoutwm='1' ;
+else if (GEST_WK2=30 and sex = '1' and racehisp = '0' and BIRTHWT_F2 gt 3530)   							then pregoutwm='3' ;
+
+else if (GEST_WK2=31 and sex = '1' and racehisp = '0' and BIRTHWT_F2 le 1314)						    	then pregoutwm='2' ;
+else if (GEST_WK2=31 and sex = '1' and racehisp = '0' and (BIRTHWT_F2 ge 1315 and BIRTHWT_F2 le 3680))    	then pregoutwm='1' ;
+else if (GEST_WK2=31 and sex = '1' and racehisp = '0' and BIRTHWT_F2 gt 3680)						    	then pregoutwm='3' ;
+
+else if (GEST_WK2=32 and sex = '1' and racehisp = '0' and BIRTHWT_F2 le 1445)						    	then pregoutwm='2' ;
+else if (GEST_WK2=32 and sex = '1' and racehisp = '0' and (BIRTHWT_F2 ge 1446 and BIRTHWT_F2 le 3718))    	then pregoutwm='1' ;
+else if (GEST_WK2=32 and sex = '1' and racehisp = '0' and BIRTHWT_F2 gt 3718) 						    	then pregoutwm='3' ;
+
+else if (GEST_WK2=33 and sex = '1' and racehisp = '0' and BIRTHWT_F2 le 1649)						    	then pregoutwm='2' ;
+else if (GEST_WK2=33 and sex = '1' and racehisp = '0' and (BIRTHWT_F2 ge 1650 and BIRTHWT_F2 le 3537))    	then pregoutwm='1' ;
+else if (GEST_WK2=33 and sex = '1' and racehisp = '0' and BIRTHWT_F2 gt 3537)						    	then pregoutwm='3' ;
+
+else if (GEST_WK2=34 and sex = '1' and racehisp = '0' and BIRTHWT_F2 le 1818)						    	then pregoutwm='2' ;
+else if (GEST_WK2=34 and sex = '1' and racehisp = '0' and (BIRTHWT_F2 ge 1819 and BIRTHWT_F2 le 3511))    	then pregoutwm='1' ;
+else if (GEST_WK2=34 and sex = '1' and racehisp = '0' and BIRTHWT_F2 gt 3511)						    	then pregoutwm='3' ;
+
+else if (GEST_WK2=35 and sex = '1' and racehisp = '0' and BIRTHWT_F2 le 1999)						   		then pregoutwm='2' ;
+else if (GEST_WK2=35 and sex = '1' and racehisp = '0' and (BIRTHWT_F2 ge 2000 and BIRTHWT_F2 le 3506))   	then pregoutwm='1' ;
+else if (GEST_WK2=35 and sex = '1' and racehisp = '0' and BIRTHWT_F2 gt 3506) 						   		then pregoutwm='3' ;
+
+else if (GEST_WK2=36 and sex = '1' and racehisp = '0' and BIRTHWT_F2 le 2229)						    	then pregoutwm='2' ;
+else if (GEST_WK2=36 and sex = '1' and racehisp = '0' and (BIRTHWT_F2 ge 2230 and BIRTHWT_F2 le 3599))		then pregoutwm='1' ;
+else if (GEST_WK2=36 and sex = '1' and racehisp = '0' and BIRTHWT_F2 gt 3599)						    	then pregoutwm='3' ;
+
+else if (GEST_WK2=37 and sex = '1' and racehisp = '0' and BIRTHWT_F2 le 2454)						    	then pregoutwm='5' ;
+else if (GEST_WK2=37 and sex = '1' and racehisp = '0' and (BIRTHWT_F2 ge 2455 and BIRTHWT_F2 le 3640))		then pregoutwm='4' ;
+else if (GEST_WK2=37 and sex = '1' and racehisp = '0' and BIRTHWT_F2 gt 3640)						    	then pregoutwm='6' ;
+
+else if (GEST_WK2=38 and sex = '1' and racehisp = '0' and BIRTHWT_F2 le 2694)						    	then pregoutwm='5' ;
+else if (GEST_WK2=38 and sex = '1' and racehisp = '0' and (BIRTHWT_F2 ge 2695 and BIRTHWT_F2 le 3880))    	then pregoutwm='4' ;
+else if (GEST_WK2=38 and sex = '1' and racehisp = '0' and BIRTHWT_F2 gt 3880) 						    	then pregoutwm='6' ;
+
+else if (GEST_WK2=39 and sex = '1' and racehisp = '0' and BIRTHWT_F2 le 2905)						    	then pregoutwm='5' ;
+else if (GEST_WK2=39 and sex = '1' and racehisp = '0' and (BIRTHWT_F2 ge 2906 and BIRTHWT_F2 le 4015))   	then pregoutwm='4' ;
+else if (GEST_WK2=39 and sex = '1' and racehisp = '0' and BIRTHWT_F2 gt 4015)						    	then pregoutwm='6' ;
+
+else if (GEST_WK2=40 and sex = '1' and racehisp = '0' and BIRTHWT_F2 le 3009)						    	then pregoutwm='5' ;
+else if (GEST_WK2=40 and sex = '1' and racehisp = '0' and (BIRTHWT_F2 ge 3010 and BIRTHWT_F2 le 4115))    	then pregoutwm='4' ;
+else if (GEST_WK2=40 and sex = '1' and racehisp = '0' and BIRTHWT_F2 gt 4115)						    	then pregoutwm='6' ;
+
+else if (GEST_WK2=41 and sex = '1' and racehisp = '0' and BIRTHWT_F2 le 3065)						    	then pregoutwm='5' ;
+else if (GEST_WK2=41 and sex = '1' and racehisp = '0' and (BIRTHWT_F2 ge 3066 and BIRTHWT_F2 le 4189))		then pregoutwm='4' ;
+else if (GEST_WK2=41 and sex = '1' and racehisp = '0' and BIRTHWT_F2 gt 4189)						    	then pregoutwm='6' ;
+
+else if (GEST_WK2=42 and sex = '1' and racehisp = '0' and BIRTHWT_F2 le 3042)						    	then pregoutwm='8' ;
+else if (GEST_WK2=42 and sex = '1' and racehisp = '0' and (BIRTHWT_F2 ge 3043 and BIRTHWT_F2 le 4170))		then pregoutwm='7' ;
+else if (GEST_WK2=42 and sex = '1' and racehisp = '0' and BIRTHWT_F2 gt 4170)						    	then pregoutwm='9' ;
+
+else if (GEST_WK2=43 and sex = '1' and racehisp = '0' and BIRTHWT_F2 le 2947)						    	then pregoutwm='8' ;
+else if (GEST_WK2=43 and sex = '1' and racehisp = '0' and (BIRTHWT_F2 ge 2948 and BIRTHWT_F2 le 4140))    	then pregoutwm='7' ;
+else if (GEST_WK2=43 and sex = '1' and racehisp = '0' and BIRTHWT_F2 gt 4140)						    	then pregoutwm='9' ;
+
+else if (GEST_WK2=44 and sex = '1' and racehisp = '0' and BIRTHWT_F2 le 2909)						    	then pregoutwm='8' ;
+else if (GEST_WK2=44 and sex = '1' and racehisp = '0' and (BIRTHWT_F2 ge 2910 and BIRTHWT_F2 le 4124))    	then pregoutwm='7' ;
+else if (GEST_WK2=44 and sex = '1' and racehisp = '0' and BIRTHWT_F2 gt 4124)						    	then pregoutwm='9' ;
+
+
+if GEST_WK2 = . then pregoutwm = '0';
+if BIRTHWT_F2= . then pregoutwm = '0';
+if (GEST_WK2 < 20 or GEST_WK2 > 50) then pregoutwm = '0';
+if (BIRTHWT_F2< 300 or BIRTHWT_F2> 9000) then pregoutwm = '0';
+
+
+
+/*Black NH Males*/
+pregoutbm= '0' ;
+
+if (GEST_WK2 le 22 and sex = '1' and racehisp = '1' and BIRTHWT_F2 le 342) 									then pregoutbm='2' ;
+else if (GEST_WK2 le 22 and sex = '1' and racehisp = '1' and (BIRTHWT_F2 ge 343 and BIRTHWT_F2 le 1893))    then pregoutbm='1' ;
+else if (GEST_WK2 le 22 and sex = '1' and racehisp = '1' and BIRTHWT_F2 gt 1893)						    then pregoutbm='3' ;
+
+else if (GEST_WK2=23 and sex = '1' and racehisp = '1' and BIRTHWT_F2 le 424)							    then pregoutbm='2' ;
+else if (GEST_WK2=23 and sex = '1' and racehisp = '1' and (BIRTHWT_F2 ge 425 and BIRTHWT_F2 le 3508))      	then pregoutbm='1' ;
+else if (GEST_WK2=23 and sex = '1' and racehisp = '1' and BIRTHWT_F2 gt 3508) 								then pregoutbm='3' ;
+
+else if (GEST_WK2=24 and sex = '1' and racehisp = '1' and BIRTHWT_F2 le 539)							    then pregoutbm='2' ;
+else if (GEST_WK2=24 and sex = '1' and racehisp = '1' and (BIRTHWT_F2 ge 540 and BIRTHWT_F2 le 1294))      	then pregoutbm='1' ;
+else if (GEST_WK2=24 and sex = '1' and racehisp = '1' and BIRTHWT_F2 gt 1294)							    then pregoutbm='3' ;
+
+else if (GEST_WK2=25 and sex = '1' and racehisp = '1' and BIRTHWT_F2 le 493)							    then pregoutbm='2' ;
+else if (GEST_WK2=25 and sex = '1' and racehisp = '1' and (BIRTHWT_F2 ge 494 and BIRTHWT_F2 le 3325))      	then pregoutbm='1' ;
+else if (GEST_WK2=25 and sex = '1' and racehisp = '1' and BIRTHWT_F2 gt 3325)							    then pregoutbm='3' ;
+
+else if (GEST_WK2=26 and sex = '1' and racehisp = '1' and BIRTHWT_F2 le 626)							    then pregoutbm='2' ;
+else if (GEST_WK2=26 and sex = '1' and racehisp = '1' and (BIRTHWT_F2 ge 627 and BIRTHWT_F2 le 2892))     	then pregoutbm='1' ;
+else if (GEST_WK2=26 and sex = '1' and racehisp = '1' and BIRTHWT_F2 gt 2892)						    	then pregoutbm='3' ;
+
+else if (GEST_WK2=27 and sex = '1' and racehisp = '1' and BIRTHWT_F2 le 660)							    then pregoutbm='2' ;
+else if (GEST_WK2=27 and sex = '1' and racehisp = '1' and (BIRTHWT_F2 ge 661 and BIRTHWT_F2 le 3176))	    then pregoutbm='1' ;
+else if (GEST_WK2=27 and sex = '1' and racehisp = '1' and BIRTHWT_F2 gt 3176) 								then pregoutbm='3' ;
+
+else if (GEST_WK2=28 and sex = '1' and racehisp = '1' and BIRTHWT_F2 le 734)							    then pregoutbm='2' ;
+else if (GEST_WK2=28 and sex = '1' and racehisp = '1' and (BIRTHWT_F2 ge 735	and BIRTHWT_F2 le 3038))    then pregoutbm='1' ;
+else if (GEST_WK2=28 and sex = '1' and racehisp = '1' and BIRTHWT_F2 gt 3038) 						    	then pregoutbm='3' ;
+
+else if (GEST_WK2=29 and sex = '1' and racehisp = '1' and BIRTHWT_F2 le 1047)								then pregoutbm='2' ;
+else if (GEST_WK2=29 and sex = '1' and racehisp = '1' and (BIRTHWT_F2 ge 1048 and BIRTHWT_F2 le 3232))    	then pregoutbm='1' ;
+else if (GEST_WK2=29 and sex = '1' and racehisp = '1' and BIRTHWT_F2 gt 3232)						    	then pregoutbm='3' ;
+
+else if (GEST_WK2=30 and sex = '1' and racehisp = '1' and BIRTHWT_F2 le 1029)								then pregoutbm='2' ;
+else if (GEST_WK2=30 and sex = '1' and racehisp = '1' and (BIRTHWT_F2 ge 1030 and BIRTHWT_F2 le 3222))    	then pregoutbm='1' ;
+else if (GEST_WK2=30 and sex = '1' and racehisp = '1' and BIRTHWT_F2 gt 3222)   							then pregoutbm='3' ;
+
+else if (GEST_WK2=31 and sex = '1' and racehisp = '1' and BIRTHWT_F2 le 1309)						    	then pregoutbm='2' ;
+else if (GEST_WK2=31 and sex = '1' and racehisp = '1' and (BIRTHWT_F2 ge 1310 and BIRTHWT_F2 le 3490))    	then pregoutbm='1' ;
+else if (GEST_WK2=31 and sex = '1' and racehisp = '1' and BIRTHWT_F2 gt 3490)						    	then pregoutbm='3' ;
+
+else if (GEST_WK2=32 and sex = '1' and racehisp = '1' and BIRTHWT_F2 le 1406)						    	then pregoutbm='2' ;
+else if (GEST_WK2=32 and sex = '1' and racehisp = '1' and (BIRTHWT_F2 ge 1407 and BIRTHWT_F2 le 3375))    	then pregoutbm='1' ;
+else if (GEST_WK2=32 and sex = '1' and racehisp = '1' and BIRTHWT_F2 gt 3375) 						    	then pregoutbm='3' ;
+
+else if (GEST_WK2=33 and sex = '1' and racehisp = '1' and BIRTHWT_F2 le 1360)						    	then pregoutbm='2' ;
+else if (GEST_WK2=33 and sex = '1' and racehisp = '1' and (BIRTHWT_F2 ge 1361 and BIRTHWT_F2 le 3390))    	then pregoutbm='1' ;
+else if (GEST_WK2=33 and sex = '1' and racehisp = '1' and BIRTHWT_F2 gt 3390)						    	then pregoutbm='3' ;
+
+else if (GEST_WK2=34 and sex = '1' and racehisp = '1' and BIRTHWT_F2 le 1709)						    	then pregoutbm='2' ;
+else if (GEST_WK2=34 and sex = '1' and racehisp = '1' and (BIRTHWT_F2 ge 1710 and BIRTHWT_F2 le 3410))    	then pregoutbm='1' ;
+else if (GEST_WK2=34 and sex = '1' and racehisp = '1' and BIRTHWT_F2 gt 3410)						    	then pregoutbm='3' ;
+
+else if (GEST_WK2=35 and sex = '1' and racehisp = '1' and BIRTHWT_F2 le 1929)						   		then pregoutbm='2' ;
+else if (GEST_WK2=35 and sex = '1' and racehisp = '1' and (BIRTHWT_F2 ge 1930 and BIRTHWT_F2 le 3460))   	then pregoutbm='1' ;
+else if (GEST_WK2=35 and sex = '1' and racehisp = '1' and BIRTHWT_F2 gt 3460) 						   		then pregoutbm='3' ;
+
+else if (GEST_WK2=36 and sex = '1' and racehisp = '1' and BIRTHWT_F2 le 2182)						    	then pregoutbm='2' ;
+else if (GEST_WK2=36 and sex = '1' and racehisp = '1' and (BIRTHWT_F2 ge 2183 and BIRTHWT_F2 le 3434))		then pregoutbm='1' ;
+else if (GEST_WK2=36 and sex = '1' and racehisp = '1' and BIRTHWT_F2 gt 3434)						    	then pregoutbm='3' ;
+
+else if (GEST_WK2=37 and sex = '1' and racehisp = '1' and BIRTHWT_F2 le 2424)						    	then pregoutbm='5' ;
+else if (GEST_WK2=37 and sex = '1' and racehisp = '1' and (BIRTHWT_F2 ge 2425 and BIRTHWT_F2 le 3629))		then pregoutbm='4' ;
+else if (GEST_WK2=37 and sex = '1' and racehisp = '1' and BIRTHWT_F2 gt 3629)						    	then pregoutbm='6' ;
+
+else if (GEST_WK2=38 and sex = '1' and racehisp = '1' and BIRTHWT_F2 le 2604)						    	then pregoutbm='5' ;
+else if (GEST_WK2=38 and sex = '1' and racehisp = '1' and (BIRTHWT_F2 ge 2605 and BIRTHWT_F2 le 3742))    	then pregoutbm='4' ;
+else if (GEST_WK2=38 and sex = '1' and racehisp = '1' and BIRTHWT_F2 gt 3742) 						    	then pregoutbm='6' ;
+
+else if (GEST_WK2=39 and sex = '1' and racehisp = '1' and BIRTHWT_F2 le 2731)						    	then pregoutbm='5' ;
+else if (GEST_WK2=39 and sex = '1' and racehisp = '1' and (BIRTHWT_F2 ge 2732 and BIRTHWT_F2 le 3830))   	then pregoutbm='4' ;
+else if (GEST_WK2=39 and sex = '1' and racehisp = '1' and BIRTHWT_F2 gt 3830)						    	then pregoutbm='6' ;
+
+else if (GEST_WK2=40 and sex = '1' and racehisp = '1' and BIRTHWT_F2 le 2839)						    	then pregoutbm='5' ;
+else if (GEST_WK2=40 and sex = '1' and racehisp = '1' and (BIRTHWT_F2 ge 2840 and BIRTHWT_F2 le 3912))    	then pregoutbm='4' ;
+else if (GEST_WK2=40 and sex = '1' and racehisp = '1' and BIRTHWT_F2 gt 3912)						    	then pregoutbm='6' ;
+
+else if (GEST_WK2=41 and sex = '1' and racehisp = '1' and BIRTHWT_F2 le 2864)						    	then pregoutbm='5' ;
+else if (GEST_WK2=41 and sex = '1' and racehisp = '1' and (BIRTHWT_F2 ge 2865 and BIRTHWT_F2 le 3985))		then pregoutbm='4' ;
+else if (GEST_WK2=41 and sex = '1' and racehisp = '1' and BIRTHWT_F2 gt 3985)						    	then pregoutbm='6' ;
+
+else if (GEST_WK2=42 and sex = '1' and racehisp = '1' and BIRTHWT_F2 le 2827)						    	then pregoutbm='8' ;
+else if (GEST_WK2=42 and sex = '1' and racehisp = '1' and (BIRTHWT_F2 ge 2828 and BIRTHWT_F2 le 3945))		then pregoutbm='7' ;
+else if (GEST_WK2=42 and sex = '1' and racehisp = '1' and BIRTHWT_F2 gt 3945)						    	then pregoutbm='9' ;
+
+else if (GEST_WK2=43 and sex = '1' and racehisp = '1' and BIRTHWT_F2 le 2806)						    	then pregoutbm='8' ;
+else if (GEST_WK2=43 and sex = '1' and racehisp = '1' and (BIRTHWT_F2 ge 2807 and BIRTHWT_F2 le 3900))    	then pregoutbm='7' ;
+else if (GEST_WK2=43 and sex = '1' and racehisp = '1' and BIRTHWT_F2 gt 3900)						    	then pregoutbm='9' ;
+
+else if (GEST_WK2=44 and sex = '1' and racehisp = '1' and BIRTHWT_F2 le 2749)						    	then pregoutbm='8' ;
+else if (GEST_WK2=44 and sex = '1' and racehisp = '1' and (BIRTHWT_F2 ge 2750 and BIRTHWT_F2 le 3920))    	then pregoutbm='7' ;
+else if (GEST_WK2=44 and sex = '1' and racehisp = '1' and BIRTHWT_F2 gt 3920)						    	then pregoutbm='9' ;
+
+
+if GEST_WK2 = . then pregoutbm = '0';
+if BIRTHWT_F2= . then pregoutbm = '0';
+if (GEST_WK2 < 20 or GEST_WK2 > 50) then pregoutbm = '0';
+if (BIRTHWT_F2< 300 or BIRTHWT_F2> 9000) then pregoutbm = '0';
+
+/*this is for nonhispanic male babies and will update it later*/
+
+pregouthm= '0' ;
+
+if (GEST_WK2 le 22 and sex = '1' and racehisp = '2' and BIRTHWT_F2 le 354) 										then pregouthm='2' ;
+else if (GEST_WK2 le 22 and sex = '1' and racehisp = '2' and (BIRTHWT_F2 ge 355 and BIRTHWT_F2 le 3948))    then pregouthm='1' ;
+else if (GEST_WK2 le 22 and sex = '1' and racehisp = '2' and BIRTHWT_F2 gt 3948)						    then pregouthm='3' ;
+
+else if (GEST_WK2=23 and sex = '1' and racehisp = '2' and BIRTHWT_F2 le 533)							    then pregouthm='2' ;
+else if (GEST_WK2=23 and sex = '1' and racehisp = '2' and (BIRTHWT_F2 ge 534 and BIRTHWT_F2 le 624))      	then pregouthm='1' ;
+else if (GEST_WK2=23 and sex = '1' and racehisp = '2' and BIRTHWT_F2 gt 624) 								then pregouthm='3' ;
+
+else if (GEST_WK2=24 and sex = '1' and racehisp = '2' and BIRTHWT_F2 le 566)							    then pregouthm='2' ;
+else if (GEST_WK2=24 and sex = '1' and racehisp = '2' and (BIRTHWT_F2 ge 567 and BIRTHWT_F2 le 1183))      	then pregouthm='1' ;
+else if (GEST_WK2=24 and sex = '1' and racehisp = '2' and BIRTHWT_F2 gt 1183)							    then pregouthm='3' ;
+
+else if (GEST_WK2=25 and sex = '1' and racehisp = '2' and BIRTHWT_F2 le 571)							    then pregouthm='2' ;
+else if (GEST_WK2=25 and sex = '1' and racehisp = '2' and (BIRTHWT_F2 ge 572 and BIRTHWT_F2 le 3071))      	then pregouthm='1' ;
+else if (GEST_WK2=25 and sex = '1' and racehisp = '2' and BIRTHWT_F2 gt 3071)							    then pregouthm='3' ;
+
+else if (GEST_WK2=26 and sex = '1' and racehisp = '2' and BIRTHWT_F2 le 504)							    then pregouthm='2' ;
+else if (GEST_WK2=26 and sex = '1' and racehisp = '2' and (BIRTHWT_F2 ge 505 and BIRTHWT_F2 le 3385))     	then pregouthm='1' ;
+else if (GEST_WK2=26 and sex = '1' and racehisp = '2' and BIRTHWT_F2 gt 3385)						    	then pregouthm='3' ;
+
+else if (GEST_WK2=27 and sex = '1' and racehisp = '2' and BIRTHWT_F2 le 630)							    then pregouthm='2' ;
+else if (GEST_WK2=27 and sex = '1' and racehisp = '2' and (BIRTHWT_F2 ge 631 and BIRTHWT_F2 le 2418))	    then pregouthm='1' ;
+else if (GEST_WK2=27 and sex = '1' and racehisp = '2' and BIRTHWT_F2 gt 2418) 								then pregouthm='3' ;
+
+else if (GEST_WK2=28 and sex = '1' and racehisp = '2' and BIRTHWT_F2 le 879)							    then pregouthm='2' ;
+else if (GEST_WK2=28 and sex = '1' and racehisp = '2' and (BIRTHWT_F2 ge 880 and BIRTHWT_F2 le 4451))    	then pregouthm='1' ;
+else if (GEST_WK2=28 and sex = '1' and racehisp = '2' and BIRTHWT_F2 gt 4451) 						    	then pregouthm='3' ;
+
+else if (GEST_WK2=29 and sex = '1' and racehisp = '2' and BIRTHWT_F2 le 1004)								then pregouthm='2' ;
+else if (GEST_WK2=29 and sex = '1' and racehisp = '2' and (BIRTHWT_F2 ge 1005 and BIRTHWT_F2 le 3395))    	then pregouthm='1' ;
+else if (GEST_WK2=29 and sex = '1' and racehisp = '2' and BIRTHWT_F2 gt 3395)						    	then pregouthm='3' ;
+
+else if (GEST_WK2=30 and sex = '1' and racehisp = '2' and BIRTHWT_F2 le 1389)								then pregouthm='2' ;
+else if (GEST_WK2=30 and sex = '1' and racehisp = '2' and (BIRTHWT_F2 ge 1390 and BIRTHWT_F2 le 3691))    	then pregouthm='1' ;
+else if (GEST_WK2=30 and sex = '1' and racehisp = '2' and BIRTHWT_F2 gt 3691)   							then pregouthm='3' ;
+
+else if (GEST_WK2=31 and sex = '1' and racehisp = '2' and BIRTHWT_F2 le 1069)						    	then pregouthm='2' ;
+else if (GEST_WK2=31 and sex = '1' and racehisp = '2' and (BIRTHWT_F2 ge 1070 and BIRTHWT_F2 le 3417))    	then pregouthm='1' ;
+else if (GEST_WK2=31 and sex = '1' and racehisp = '2' and BIRTHWT_F2 gt 3417)						    	then pregouthm='3' ;
+
+else if (GEST_WK2=32 and sex = '1' and racehisp = '2' and BIRTHWT_F2 le 1299)						    	then pregouthm='2' ;
+else if (GEST_WK2=32 and sex = '1' and racehisp = '2' and (BIRTHWT_F2 ge 1300 and BIRTHWT_F2 le 3775))    	then pregouthm='1' ;
+else if (GEST_WK2=32 and sex = '1' and racehisp = '2' and BIRTHWT_F2 gt 3775) 						    	then pregouthm='3' ;
+
+else if (GEST_WK2=33 and sex = '1' and racehisp = '2' and BIRTHWT_F2 le 1651)						    	then pregouthm='2' ;
+else if (GEST_WK2=33 and sex = '1' and racehisp = '2' and (BIRTHWT_F2 ge 1652 and BIRTHWT_F2 le 3490))    	then pregouthm='1' ;
+else if (GEST_WK2=33 and sex = '1' and racehisp = '2' and BIRTHWT_F2 gt 3490)						    	then pregouthm='3' ;
+
+else if (GEST_WK2=34 and sex = '1' and racehisp = '2' and BIRTHWT_F2 le 1969)						    	then pregouthm='2' ;
+else if (GEST_WK2=34 and sex = '1' and racehisp = '2' and (BIRTHWT_F2 ge 1970 and BIRTHWT_F2 le 3596))  	then pregouthm='1' ;
+else if (GEST_WK2=34 and sex = '1' and racehisp = '2' and BIRTHWT_F2 gt 3596)						   	 	then pregouthm='3' ;
+
+else if (GEST_WK2=35 and sex = '1' and racehisp = '2' and BIRTHWT_F2 le 2172)						   		then pregouthm='2' ;
+else if (GEST_WK2=35 and sex = '1' and racehisp = '2' and (BIRTHWT_F2 ge 2173 and BIRTHWT_F2 le 3490))   	then pregouthm='1' ;
+else if (GEST_WK2=35 and sex = '1' and racehisp = '2' and BIRTHWT_F2 gt 3490) 						   		then pregouthm='3' ;
+
+else if (GEST_WK2=36 and sex = '1' and racehisp = '2' and BIRTHWT_F2 le 2279)						    	then pregouthm='2' ;
+else if (GEST_WK2=36 and sex = '1' and racehisp = '2' and (BIRTHWT_F2 ge 2280 and BIRTHWT_F2 le 3530))		then pregouthm='1' ;
+else if (GEST_WK2=36 and sex = '1' and racehisp = '2' and BIRTHWT_F2 gt 3530)						    	then pregouthm='3' ;
+
+else if (GEST_WK2=37 and sex = '1' and racehisp = '2' and BIRTHWT_F2 le 2439)						    	then pregouthm='5' ;
+else if (GEST_WK2=37 and sex = '1' and racehisp = '2' and (BIRTHWT_F2 ge 2440 and BIRTHWT_F2 le 3682))		then pregouthm='4' ;
+else if (GEST_WK2=37 and sex = '1' and racehisp = '2' and BIRTHWT_F2 gt 3682)						    	then pregouthm='6' ;
+
+else if (GEST_WK2=38 and sex = '1' and racehisp = '2' and BIRTHWT_F2 le 2674)						    	then pregouthm='5' ;
+else if (GEST_WK2=38 and sex = '1' and racehisp = '2' and (BIRTHWT_F2 ge 2675 and BIRTHWT_F2 le 3760))    	then pregouthm='4' ;
+else if (GEST_WK2=38 and sex = '1' and racehisp = '2' and BIRTHWT_F2 gt 3760) 						    	then pregouthm='6' ;
+
+else if (GEST_WK2=39 and sex = '1' and racehisp = '2' and BIRTHWT_F2 le 2834)						    	then pregouthm='5' ;
+else if (GEST_WK2=39 and sex = '1' and racehisp = '2' and (BIRTHWT_F2 ge 2835 and BIRTHWT_F2 le 3945))   	then pregouthm='4' ;
+else if (GEST_WK2=39 and sex = '1' and racehisp = '2' and BIRTHWT_F2 gt 3945)						    	then pregouthm='6' ;
+
+else if (GEST_WK2=40 and sex = '1' and racehisp = '2' and BIRTHWT_F2 le 2944)						    	then pregouthm='5' ;
+else if (GEST_WK2=40 and sex = '1' and racehisp = '2' and (BIRTHWT_F2 ge 2945 and BIRTHWT_F2 le 4035))    	then pregouthm='4' ;
+else if (GEST_WK2=40 and sex = '1' and racehisp = '2' and BIRTHWT_F2 gt 4035)						    	then pregouthm='6' ;
+
+else if (GEST_WK2=41 and sex = '1' and racehisp = '2' and BIRTHWT_F2 le 2914)						    	then pregouthm='5' ;
+else if (GEST_WK2=41 and sex = '1' and racehisp = '2' and (BIRTHWT_F2 ge 2915 and BIRTHWT_F2 le 4012))		then pregouthm='4' ;
+else if (GEST_WK2=41 and sex = '1' and racehisp = '2' and BIRTHWT_F2 gt 4012)						    	then pregouthm='6' ;
+
+else if (GEST_WK2=42 and sex = '1' and racehisp = '2' and BIRTHWT_F2 le 2830)						    	then pregouthm='8' ;
+else if (GEST_WK2=42 and sex = '1' and racehisp = '2' and (BIRTHWT_F2 ge 2831 and BIRTHWT_F2 le 4040))		then pregouthm='7' ;
+else if (GEST_WK2=42 and sex = '1' and racehisp = '2' and BIRTHWT_F2 gt 4040)						    	then pregouthm='9' ;
+
+else if (GEST_WK2=43 and sex = '1' and racehisp = '2' and BIRTHWT_F2 le 2794)						    	then pregouthm='8' ;
+else if (GEST_WK2=43 and sex = '1' and racehisp = '2' and (BIRTHWT_F2 ge 2795 and BIRTHWT_F2 le 3969))    	then pregouthm='7' ;
+else if (GEST_WK2=43 and sex = '1' and racehisp = '2' and BIRTHWT_F2 gt 3969)						    	then pregouthm='9' ;
+
+else if (GEST_WK2=44 and sex = '1' and racehisp = '2' and BIRTHWT_F2 le 2769)						    	then pregouthm='8' ;
+else if (GEST_WK2=44 and sex = '1' and racehisp = '2' and (BIRTHWT_F2 ge 2770 and BIRTHWT_F2 le 3867))    	then pregouthm='7' ;
+else if (GEST_WK2=44 and sex = '1' and racehisp = '2' and BIRTHWT_F2 gt 3867)						    	then pregouthm='9' ;
+
+
+if GEST_WK2 = . then pregouthm = '0';
+if BIRTHWT_F2= . then pregouthm = '0';
+if (GEST_WK2 < 20 or GEST_WK2 > 50) then pregouthm = '0';
+if (BIRTHWT_F2< 300 or BIRTHWT_F2> 9000) then pregouthm = '0';
+
+
+/*White NH Female*/
+
+if (GEST_WK2 le 22 and sex = '2' and racehisp = '0' and BIRTHWT_F2 le 282)                                  then pregoutwf='2' ;
+else if (GEST_WK2 le 22 and sex = '2' and racehisp = '0' and (BIRTHWT_F2 ge 283 and BIRTHWT_F2 le 3197))    then pregoutwf='1' ;
+else if (GEST_WK2 le 22 and sex = '2' and racehisp = '0' and BIRTHWT_F2 gt 3197)                            then pregoutwf='3' ;
+
+else if (GEST_WK2=23 and sex = '2' and racehisp = '0' and BIRTHWT_F2 le 512)                                then pregoutwf='2' ;
+else if (GEST_WK2=23 and sex = '2' and racehisp = '0' and (BIRTHWT_F2 ge 513 and BIRTHWT_F2 le 3150))       then pregoutwf='1' ;
+else if (GEST_WK2=23 and sex = '2' and racehisp = '0' and BIRTHWT_F2 gt 3150)                               then pregoutwf='3' ;
+
+else if (GEST_WK2=24 and sex = '2' and racehisp = '0' and BIRTHWT_F2 le 481)                                then pregoutwf='2' ;
+else if (GEST_WK2=24 and sex = '2' and racehisp = '0' and (BIRTHWT_F2 ge 482 and BIRTHWT_F2 le 3884))       then pregoutwf='1' ;
+else if (GEST_WK2=24 and sex = '2' and racehisp = '0' and BIRTHWT_F2 gt 3884)                               then pregoutwf='3' ;
+
+else if (GEST_WK2=25 and sex = '2' and racehisp = '0' and BIRTHWT_F2 le 549)                                then pregoutwf='2' ;
+else if (GEST_WK2=25 and sex = '2' and racehisp = '0' and (BIRTHWT_F2 ge 550 and BIRTHWT_F2 le 3260))       then pregoutwf='1' ;
+else if (GEST_WK2=25 and sex = '2' and racehisp = '0' and BIRTHWT_F2 gt 3260)                               then pregoutwf='3' ;
+
+else if (GEST_WK2=26 and sex = '2' and racehisp = '0' and BIRTHWT_F2 le 559)                                then pregoutwf='2' ;
+else if (GEST_WK2=26 and sex = '2' and racehisp = '0' and (BIRTHWT_F2 ge 560 and BIRTHWT_F2 le 3520))       then pregoutwf='1' ;
+else if (GEST_WK2=26 and sex = '2' and racehisp = '0' and BIRTHWT_F2 gt 3520)                               then pregoutwf='3' ;
+
+else if (GEST_WK2=27 and sex = '2' and racehisp = '0' and BIRTHWT_F2 le 650)                                then pregoutwf='2' ;
+else if (GEST_WK2=27 and sex = '2' and racehisp = '0' and (BIRTHWT_F2 ge 651 and BIRTHWT_F2 le 3425))       then pregoutwf='1' ;
+else if (GEST_WK2=27 and sex = '2' and racehisp = '0' and BIRTHWT_F2 gt 3425)                               then pregoutwf='3' ;
+
+else if (GEST_WK2=28 and sex = '2' and racehisp = '0' and BIRTHWT_F2 le 679)                                then pregoutwf='2' ;
+else if (GEST_WK2=28 and sex = '2' and racehisp = '0' and (BIRTHWT_F2 ge 680 and BIRTHWT_F2 le 3350))       then pregoutwf='1' ;
+else if (GEST_WK2=28 and sex = '2' and racehisp = '0' and BIRTHWT_F2 gt 3350)                               then pregoutwf='3' ;
+
+else if (GEST_WK2=29 and sex = '2' and racehisp = '0' and BIRTHWT_F2 le 940)                                then pregoutwf='2' ;
+else if (GEST_WK2=29 and sex = '2' and racehisp = '0' and (BIRTHWT_F2 ge 941 and BIRTHWT_F2 le 3208))       then pregoutwf='1' ;
+else if (GEST_WK2=29 and sex = '2' and racehisp = '0' and BIRTHWT_F2 gt 3208)                               then pregoutwf='3' ;
+
+else if (GEST_WK2=30 and sex = '2' and racehisp = '0' and BIRTHWT_F2 le 840)                                then pregoutwf='2' ;
+else if (GEST_WK2=30 and sex = '2' and racehisp = '0' and (BIRTHWT_F2 ge 841 and BIRTHWT_F2 le 3596))       then pregoutwf='1' ;
+else if (GEST_WK2=30 and sex = '2' and racehisp = '0' and BIRTHWT_F2 gt 3596)                               then pregoutwf='3' ;
+
+else if (GEST_WK2=31 and sex = '2' and racehisp = '0' and BIRTHWT_F2 le 1194)                               then pregoutwf='2' ;
+else if (GEST_WK2=31 and sex = '2' and racehisp = '0' and (BIRTHWT_F2 ge 1195 and BIRTHWT_F2 le 3440))      then pregoutwf='1' ;
+else if (GEST_WK2=31 and sex = '2' and racehisp = '0' and BIRTHWT_F2 gt 3440)                               then pregoutwf='3' ;
+
+else if (GEST_WK2=32 and sex = '2' and racehisp = '0' and BIRTHWT_F2 le 1331)                               then pregoutwf='2' ;
+else if (GEST_WK2=32 and sex = '2' and racehisp = '0' and (BIRTHWT_F2 ge 1332 and BIRTHWT_F2 le 3487))      then pregoutwf='1' ;
+else if (GEST_WK2=32 and sex = '2' and racehisp = '0' and BIRTHWT_F2 gt 3487)                               then pregoutwf='3' ;
+
+else if (GEST_WK2=33 and sex = '2' and racehisp = '0' and BIRTHWT_F2 le 1589)                               then pregoutwf='2' ;
+else if (GEST_WK2=33 and sex = '2' and racehisp = '0' and (BIRTHWT_F2 ge 1590 and BIRTHWT_F2 le 3406))      then pregoutwf='1' ;
+else if (GEST_WK2=33 and sex = '2' and racehisp = '0' and BIRTHWT_F2 gt 3406)                               then pregoutwf='3' ;
+
+else if (GEST_WK2=34 and sex = '2' and racehisp = '0' and BIRTHWT_F2 le 1672)                               then pregoutwf='2' ;
+else if (GEST_WK2=34 and sex = '2' and racehisp = '0' and (BIRTHWT_F2 ge 1673 and BIRTHWT_F2 le 3430))      then pregoutwf='1' ;
+else if (GEST_WK2=34 and sex = '2' and racehisp = '0' and BIRTHWT_F2 gt 3430)                               then pregoutwf='3' ;
+
+else if (GEST_WK2=35 and sex = '2' and racehisp = '0' and BIRTHWT_F2 le 1891)                               then pregoutwf='2' ;
+else if (GEST_WK2=35 and sex = '2' and racehisp = '0' and (BIRTHWT_F2 ge 1892 and BIRTHWT_F2 le 3447))      then pregoutwf='1' ;
+else if (GEST_WK2=35 and sex = '2' and racehisp = '0' and BIRTHWT_F2 gt 3447)                               then pregoutwf='3' ;
+
+else if (GEST_WK2=36 and sex = '2' and racehisp = '0' and BIRTHWT_F2 le 2114)                               then pregoutwf='2' ;
+else if (GEST_WK2=36 and sex = '2' and racehisp = '0' and (BIRTHWT_F2 ge 2115 and BIRTHWT_F2 le 3499))      then pregoutwf='1' ;
+else if (GEST_WK2=36 and sex = '2' and racehisp = '0' and BIRTHWT_F2 gt 3500)                               then pregoutwf='3' ;
+
+else if (GEST_WK2=37 and sex = '2' and racehisp = '0' and BIRTHWT_F2 le 2334)                               then pregoutwf='5' ;
+else if (GEST_WK2=37 and sex = '2' and racehisp = '0' and (BIRTHWT_F2 ge 2335 and BIRTHWT_F2 le 3600))      then pregoutwf='4' ;
+else if (GEST_WK2=37 and sex = '2' and racehisp = '0' and BIRTHWT_F2 gt 3600)                               then pregoutwf='6' ;
+
+else if (GEST_WK2=38 and sex = '2' and racehisp = '0' and BIRTHWT_F2 le 2589)                               then pregoutwf='5' ;
+else if (GEST_WK2=38 and sex = '2' and racehisp = '0' and (BIRTHWT_F2 ge 2590 and BIRTHWT_F2 le 3710))      then pregoutwf='4' ;
+else if (GEST_WK2=38 and sex = '2' and racehisp = '0' and BIRTHWT_F2 gt 3710)                               then pregoutwf='6' ;
+
+else if (GEST_WK2=39 and sex = '2' and racehisp = '0' and BIRTHWT_F2 le 2804)                               then pregoutwf='5' ;
+else if (GEST_WK2=39 and sex = '2' and racehisp = '0' and (BIRTHWT_F2 ge 2805 and BIRTHWT_F2 le 3881))      then pregoutwf='4' ;
+else if (GEST_WK2=39 and sex = '2' and racehisp = '0' and BIRTHWT_F2 gt 3881)                               then pregoutwf='6' ;
+
+else if (GEST_WK2=40 and sex = '2' and racehisp = '0' and BIRTHWT_F2 le 2899)                               then pregoutwf='5' ;
+else if (GEST_WK2=40 and sex = '2' and racehisp = '0' and (BIRTHWT_F2 ge 2900 and BIRTHWT_F2 le 3941))      then pregoutwf='4' ;
+else if (GEST_WK2=40 and sex = '2' and racehisp = '0' and BIRTHWT_F2 gt 3941)                               then pregoutwf='6' ;
+
+else if (GEST_WK2=41 and sex = '2' and racehisp = '0' and BIRTHWT_F2 le 2949)                               then pregoutwf='5' ;
+else if (GEST_WK2=41 and sex = '2' and racehisp = '0' and (BIRTHWT_F2 ge 2950 and BIRTHWT_F2 le 4000))      then pregoutwf='4' ;
+else if (GEST_WK2=41 and sex = '2' and racehisp = '0' and BIRTHWT_F2 gt 4000)                               then pregoutwf='6' ;
+
+else if (GEST_WK2=42 and sex = '2' and racehisp = '0' and BIRTHWT_F2 le 2914)                               then pregoutwf='8' ;
+else if (GEST_WK2=42 and sex = '2' and racehisp = '0' and (BIRTHWT_F2 ge 2915 and BIRTHWT_F2 le 3997))      then pregoutwf='7' ;
+else if (GEST_WK2=42 and sex = '2' and racehisp = '0' and BIRTHWT_F2 gt 3997)                               then pregoutwf='9' ;
+
+else if (GEST_WK2=43 and sex = '2' and racehisp = '0' and BIRTHWT_F2 le 2806)                               then pregoutwf='8' ;
+else if (GEST_WK2=43 and sex = '2' and racehisp = '0' and (BIRTHWT_F2 ge 2807 and BIRTHWT_F2 le 4054))      then pregoutwf='7' ;
+else if (GEST_WK2=43 and sex = '2' and racehisp = '0' and BIRTHWT_F2 gt 4054)                               then pregoutwf='9' ;
+
+else if (GEST_WK2=44 and sex = '2' and racehisp = '0' and BIRTHWT_F2 le 2852)                               then pregoutwf='8' ;
+else if (GEST_WK2=44 and sex = '2' and racehisp = '0' and (BIRTHWT_F2 ge 2853 and BIRTHWT_F2 le 3960))      then pregoutwf='7' ;
+else if (GEST_WK2=44 and sex = '2' and racehisp = '0' and BIRTHWT_F2 gt 3960)                               then pregoutwf='9' ;
+
+
+if GEST_WK2 = . then pregoutwf = '0';
+if BIRTHWT_F2= . then pregoutwf = '0';
+if (GEST_WK2 < 20 or GEST_WK2 > 50) then pregoutwf = '0';
+if (BIRTHWT_F2< 300 or BIRTHWT_F2> 9000) then pregoutwf = '0';
+
+/*this is for black nonhispanic female babies*/
+
+pregoutbf= '0' ;
+
+if (GEST_WK2 le 22 and sex = '2' and racehisp = '1' and BIRTHWT_F2 le 349)                                      then pregoutbf='2' ;
+else if (GEST_WK2 le 22 and sex = '2' and racehisp = '1' and (BIRTHWT_F2 ge 350 and BIRTHWT_F2 le 2696))    then pregoutbf='1' ;
+else if (GEST_WK2 le 22 and sex = '2' and racehisp = '1' and BIRTHWT_F2 gt 2696)                            then pregoutbf='3' ;
+
+else if (GEST_WK2=23 and sex = '2' and racehisp = '1' and BIRTHWT_F2 le 392)                                then pregoutbf='2' ;
+else if (GEST_WK2=23 and sex = '2' and racehisp = '1' and (BIRTHWT_F2 ge 393 and BIRTHWT_F2 le 2840))       then pregoutbf='1' ;
+else if (GEST_WK2=23 and sex = '2' and racehisp = '1' and BIRTHWT_F2 gt 2840)                               then pregoutbf='3' ;
+
+else if (GEST_WK2=24 and sex = '2' and racehisp = '1' and BIRTHWT_F2 le 522)                                then pregoutbf='2' ;
+else if (GEST_WK2=24 and sex = '2' and racehisp = '1' and (BIRTHWT_F2 ge 523 and BIRTHWT_F2 le 3367))       then pregoutbf='1' ;
+else if (GEST_WK2=24 and sex = '2' and racehisp = '1' and BIRTHWT_F2 gt 3367)                               then pregoutbf='3' ;
+
+else if (GEST_WK2=25 and sex = '2' and racehisp = '1' and BIRTHWT_F2 le 430)                                then pregoutbf='2' ;
+else if (GEST_WK2=25 and sex = '2' and racehisp = '1' and (BIRTHWT_F2 ge 431 and BIRTHWT_F2 le 1660))       then pregoutbf='1' ;
+else if (GEST_WK2=25 and sex = '2' and racehisp = '1' and BIRTHWT_F2 gt 1660)                               then pregoutbf='3' ;
+
+else if (GEST_WK2=26 and sex = '2' and racehisp = '1' and BIRTHWT_F2 le 542)                                then pregoutbf='2' ;
+else if (GEST_WK2=26 and sex = '2' and racehisp = '1' and (BIRTHWT_F2 ge 543 and BIRTHWT_F2 le 3075))       then pregoutbf='1' ;
+else if (GEST_WK2=26 and sex = '2' and racehisp = '1' and BIRTHWT_F2 gt 3075)                               then pregoutbf='3' ;
+
+else if (GEST_WK2=27 and sex = '2' and racehisp = '1' and BIRTHWT_F2 le 673)                                then pregoutbf='2' ;
+else if (GEST_WK2=27 and sex = '2' and racehisp = '1' and (BIRTHWT_F2 ge 674 and BIRTHWT_F2 le 3714))       then pregoutbf='1' ;
+else if (GEST_WK2=27 and sex = '2' and racehisp = '1' and BIRTHWT_F2 gt 3714)                               then pregoutbf='3' ;
+
+else if (GEST_WK2=28 and sex = '2' and racehisp = '1' and BIRTHWT_F2 le 665)                                then pregoutbf='2' ;
+else if (GEST_WK2=28 and sex = '2' and racehisp = '1' and (BIRTHWT_F2 ge 666 and BIRTHWT_F2 le 3033))       then pregoutbf='1' ;
+else if (GEST_WK2=28 and sex = '2' and racehisp = '1' and BIRTHWT_F2 gt 3033)                               then pregoutbf='3' ;
+
+else if (GEST_WK2=29 and sex = '2' and racehisp = '1' and BIRTHWT_F2 le 1009)                               then pregoutbf='2' ;
+else if (GEST_WK2=29 and sex = '2' and racehisp = '1' and (BIRTHWT_F2 ge 1010 and BIRTHWT_F2 le 3505))      then pregoutbf='1' ;
+else if (GEST_WK2=29 and sex = '2' and racehisp = '1' and BIRTHWT_F2 gt 3505)                               then pregoutbf='3' ;
+
+else if (GEST_WK2=30 and sex = '2' and racehisp = '1' and BIRTHWT_F2 le 894)                                then pregoutbf='2' ;
+else if (GEST_WK2=30 and sex = '2' and racehisp = '1' and (BIRTHWT_F2 ge 895 and BIRTHWT_F2 le 3281))       then pregoutbf='1' ;
+else if (GEST_WK2=30 and sex = '2' and racehisp = '1' and BIRTHWT_F2 gt 3281)                               then pregoutbf='3' ;
+
+else if (GEST_WK2=31 and sex = '2' and racehisp = '1' and BIRTHWT_F2 le 1094)                               then pregoutbf='2' ;
+else if (GEST_WK2=31 and sex = '2' and racehisp = '1' and (BIRTHWT_F2 ge 1095 and BIRTHWT_F2 le 3005))      then pregoutbf='1' ;
+else if (GEST_WK2=31 and sex = '2' and racehisp = '1' and BIRTHWT_F2 gt 3005)                               then pregoutbf='3' ;
+
+else if (GEST_WK2=32 and sex = '2' and racehisp = '1' and BIRTHWT_F2 le 1374)                               then pregoutbf='2' ;
+else if (GEST_WK2=32 and sex = '2' and racehisp = '1' and (BIRTHWT_F2 ge 1375 and BIRTHWT_F2 le 3455))      then pregoutbf='1' ;
+else if (GEST_WK2=32 and sex = '2' and racehisp = '1' and BIRTHWT_F2 gt 3455)                               then pregoutbf='3' ;
+
+else if (GEST_WK2=33 and sex = '2' and racehisp = '1' and BIRTHWT_F2 le 1439)                               then pregoutbf='2' ;
+else if (GEST_WK2=33 and sex = '2' and racehisp = '1' and (BIRTHWT_F2 ge 1440 and BIRTHWT_F2 le 3346))      then pregoutbf='1' ;
+else if (GEST_WK2=33 and sex = '2' and racehisp = '1' and BIRTHWT_F2 gt 3346)                               then pregoutbf='3' ;
+
+else if (GEST_WK2=34 and sex = '2' and racehisp = '1' and BIRTHWT_F2 le 1784)                               then pregoutbf='2' ;
+else if (GEST_WK2=34 and sex = '2' and racehisp = '1' and (BIRTHWT_F2 ge 1785 and BIRTHWT_F2 le 3440))      then pregoutbf='1' ;
+else if (GEST_WK2=34 and sex = '2' and racehisp = '1' and BIRTHWT_F2 gt 3440)                               then pregoutbf='3' ;
+
+else if (GEST_WK2=35 and sex = '2' and racehisp = '1' and BIRTHWT_F2 le 1849)                               then pregoutbf='2' ;
+else if (GEST_WK2=35 and sex = '2' and racehisp = '1' and (BIRTHWT_F2 ge 1850 and BIRTHWT_F2 le 3410))      then pregoutbf='1' ;
+else if (GEST_WK2=35 and sex = '2' and racehisp = '1' and BIRTHWT_F2 gt 3410)                               then pregoutbf='3' ;
+
+else if (GEST_WK2=36 and sex = '2' and racehisp = '1' and BIRTHWT_F2 le 2100)                               then pregoutbf='2' ;
+else if (GEST_WK2=36 and sex = '2' and racehisp = '1' and (BIRTHWT_F2 ge 2101 and BIRTHWT_F2 le 3400))      then pregoutbf='1' ;
+else if (GEST_WK2=36 and sex = '2' and racehisp = '1' and BIRTHWT_F2 gt 3400)                               then pregoutbf='3' ;
+
+else if (GEST_WK2=37 and sex = '2' and racehisp = '1' and BIRTHWT_F2 le 2267)                               then pregoutbf='5' ;
+else if (GEST_WK2=37 and sex = '2' and racehisp = '1' and (BIRTHWT_F2 ge 2268 and BIRTHWT_F2 le 3420))      then pregoutbf='4' ;
+else if (GEST_WK2=37 and sex = '2' and racehisp = '1' and BIRTHWT_F2 gt 3420)                               then pregoutbf='6' ;
+
+else if (GEST_WK2=38 and sex = '2' and racehisp = '1' and BIRTHWT_F2 le 2494)                               then pregoutbf='5' ;
+else if (GEST_WK2=38 and sex = '2' and racehisp = '1' and (BIRTHWT_F2 ge 2495 and BIRTHWT_F2 le 3610))      then pregoutbf='4' ;
+else if (GEST_WK2=38 and sex = '2' and racehisp = '1' and BIRTHWT_F2 gt 3610)                               then pregoutbf='6' ;
+
+else if (GEST_WK2=39 and sex = '2' and racehisp = '1' and BIRTHWT_F2 le 2619)                               then pregoutbf='5' ;
+else if (GEST_WK2=39 and sex = '2' and racehisp = '1' and (BIRTHWT_F2 ge 2620 and BIRTHWT_F2 le 3700))      then pregoutbf='4' ;
+else if (GEST_WK2=39 and sex = '2' and racehisp = '1' and BIRTHWT_F2 gt 3700)                               then pregoutbf='6' ;
+
+else if (GEST_WK2=40 and sex = '2' and racehisp = '1' and BIRTHWT_F2 le 2708)                               then pregoutbf='5' ;
+else if (GEST_WK2=40 and sex = '2' and racehisp = '1' and (BIRTHWT_F2 ge 2709 and BIRTHWT_F2 le 3790))      then pregoutbf='4' ;
+else if (GEST_WK2=40 and sex = '2' and racehisp = '1' and BIRTHWT_F2 gt 3790)                               then pregoutbf='6' ;
+
+else if (GEST_WK2=41 and sex = '2' and racehisp = '1' and BIRTHWT_F2 le 2729)                               then pregoutbf='5' ;
+else if (GEST_WK2=41 and sex = '2' and racehisp = '1' and (BIRTHWT_F2 ge 2730 and BIRTHWT_F2 le 3855))      then pregoutbf='4' ;
+else if (GEST_WK2=41 and sex = '2' and racehisp = '1' and BIRTHWT_F2 gt 3855)                               then pregoutbf='6' ;
+
+else if (GEST_WK2=42 and sex = '2' and racehisp = '1' and BIRTHWT_F2 le 2729)                               then pregoutbf='8' ;
+else if (GEST_WK2=42 and sex = '2' and racehisp = '1' and (BIRTHWT_F2 ge 2730 and BIRTHWT_F2 le 3828))      then pregoutbf='7' ;
+else if (GEST_WK2=42 and sex = '2' and racehisp = '1' and BIRTHWT_F2 gt 3828)                               then pregoutbf='9' ;
+
+else if (GEST_WK2=43 and sex = '2' and racehisp = '1' and BIRTHWT_F2 le 2649)                               then pregoutbf='8' ;
+else if (GEST_WK2=43 and sex = '2' and racehisp = '1' and (BIRTHWT_F2 ge 2650 and BIRTHWT_F2 le 3780))      then pregoutbf='7' ;
+else if (GEST_WK2=43 and sex = '2' and racehisp = '1' and BIRTHWT_F2 gt 3780)                               then pregoutbf='9' ;
+
+else if (GEST_WK2=44 and sex = '2' and racehisp = '1' and BIRTHWT_F2 le 2730)                               then pregoutbf='8' ;
+else if (GEST_WK2=44 and sex = '2' and racehisp = '1' and (BIRTHWT_F2 ge 2731 and BIRTHWT_F2 le 3858))      then pregoutbf='7' ;
+else if (GEST_WK2=44 and sex = '2' and racehisp = '1' and BIRTHWT_F2 gt 3858)                               then pregoutbf='9' ;
+
+
+if GEST_WK2 = . then pregoutbf = '0';
+if BIRTHWT_F2= . then pregoutbf = '0';
+if (GEST_WK2 < 20 or GEST_WK2 > 50) then pregoutbf = '0';
+if (BIRTHWT_F2< 300 or BIRTHWT_F2> 9000) then pregoutbf = '0';
+
+/*For Hispanic...there are no records for gestational age = 22*/
+
+pregoutothf= '0' ;
+
+if (GEST_WK2=23 and sex = '2' and racehisp = '2' and BIRTHWT_F2 le 311)                                     then pregoutothf='2' ;
+else if (GEST_WK2=23 and sex = '2' and racehisp = '2' and (BIRTHWT_F2 ge 312 and BIRTHWT_F2 le 2958))       then pregoutothf='1' ;
+else if (GEST_WK2=23 and sex = '2' and racehisp = '2' and BIRTHWT_F2 gt 2958)                               then pregoutothf='3' ;
+
+else if (GEST_WK2=24 and sex = '2' and racehisp = '2' and BIRTHWT_F2 le 386)                                then pregoutothf='2' ;
+else if (GEST_WK2=24 and sex = '2' and racehisp = '2' and (BIRTHWT_F2 ge 387 and BIRTHWT_F2 le 3360))       then pregoutothf='1' ;
+else if (GEST_WK2=24 and sex = '2' and racehisp = '2' and BIRTHWT_F2 gt 3360)                               then pregoutothf='3' ;
+
+else if (GEST_WK2=25 and sex = '2' and racehisp = '2' and BIRTHWT_F2 le 429)                                then pregoutothf='2' ;
+else if (GEST_WK2=25 and sex = '2' and racehisp = '2' and (BIRTHWT_F2 ge 430 and BIRTHWT_F2 le 798))        then pregoutothf='1' ;
+else if (GEST_WK2=25 and sex = '2' and racehisp = '2' and BIRTHWT_F2 gt 798)                                then pregoutothf='3' ;
+
+else if (GEST_WK2=26 and sex = '2' and racehisp = '2' and BIRTHWT_F2 le 413)                                then pregoutothf='2' ;
+else if (GEST_WK2=26 and sex = '2' and racehisp = '2' and (BIRTHWT_F2 ge 414 and BIRTHWT_F2 le 3225))       then pregoutothf='1' ;
+else if (GEST_WK2=26 and sex = '2' and racehisp = '2' and BIRTHWT_F2 gt 3225)                               then pregoutothf='3' ;
+
+else if (GEST_WK2=27 and sex = '2' and racehisp = '2' and BIRTHWT_F2 le 489)                                then pregoutothf='2' ;
+else if (GEST_WK2=27 and sex = '2' and racehisp = '2' and (BIRTHWT_F2 ge 490 and BIRTHWT_F2 le 2653))       then pregoutothf='1' ;
+else if (GEST_WK2=27 and sex = '2' and racehisp = '2' and BIRTHWT_F2 gt 2653)                               then pregoutothf='3' ;
+
+else if (GEST_WK2=28 and sex = '2' and racehisp = '2' and BIRTHWT_F2 le 764)                                then pregoutothf='2' ;
+else if (GEST_WK2=28 and sex = '2' and racehisp = '2' and (BIRTHWT_F2 ge 765 and BIRTHWT_F2 le 3578))       then pregoutothf='1' ;
+else if (GEST_WK2=28 and sex = '2' and racehisp = '2' and BIRTHWT_F2 gt 3578)                               then pregoutothf='3' ;
+
+else if (GEST_WK2=29 and sex = '2' and racehisp = '2' and BIRTHWT_F2 le 994)                                then pregoutothf='2' ;
+else if (GEST_WK2=29 and sex = '2' and racehisp = '2' and (BIRTHWT_F2 ge 995 and BIRTHWT_F2 le 3770))       then pregoutothf='1' ;
+else if (GEST_WK2=29 and sex = '2' and racehisp = '2' and BIRTHWT_F2 gt 3770)                               then pregoutothf='3' ;
+
+else if (GEST_WK2=30 and sex = '2' and racehisp = '2' and BIRTHWT_F2 le 972)                                then pregoutothf='2' ;
+else if (GEST_WK2=30 and sex = '2' and racehisp = '2' and (BIRTHWT_F2 ge 973 and BIRTHWT_F2 le 3203))       then pregoutothf='1' ;
+else if (GEST_WK2=30 and sex = '2' and racehisp = '2' and BIRTHWT_F2 gt 3203)                               then pregoutothf='3' ;
+
+else if (GEST_WK2=31 and sex = '2' and racehisp = '2' and BIRTHWT_F2 le 1099)                               then pregoutothf='2' ;
+else if (GEST_WK2=31 and sex = '2' and racehisp = '2' and (BIRTHWT_F2 ge 1100 and BIRTHWT_F2 le 3295))      then pregoutothf='1' ;
+else if (GEST_WK2=31 and sex = '2' and racehisp = '2' and BIRTHWT_F2 gt 3295)                               then pregoutothf='3' ;
+
+else if (GEST_WK2=32 and sex = '2' and racehisp = '2' and BIRTHWT_F2 le 1374)                               then pregoutothf='2' ;
+else if (GEST_WK2=32 and sex = '2' and racehisp = '2' and (BIRTHWT_F2 ge 1375 and BIRTHWT_F2 le 3560))      then pregoutothf='1' ;
+else if (GEST_WK2=32 and sex = '2' and racehisp = '2' and BIRTHWT_F2 gt 3560)                               then pregoutothf='3' ;
+
+else if (GEST_WK2=33 and sex = '2' and racehisp = '2' and BIRTHWT_F2 le 1284)                               then pregoutothf='2' ;
+else if (GEST_WK2=33 and sex = '2' and racehisp = '2' and (BIRTHWT_F2 ge 1285 and BIRTHWT_F2 le 3480))      then pregoutothf='1' ;
+else if (GEST_WK2=33 and sex = '2' and racehisp = '2' and BIRTHWT_F2 gt 3480)                               then pregoutothf='3' ;
+
+else if (GEST_WK2=34 and sex = '2' and racehisp = '2' and BIRTHWT_F2 le 1789)                               then pregoutothf='2' ;
+else if (GEST_WK2=34 and sex = '2' and racehisp = '2' and (BIRTHWT_F2 ge 1790 and BIRTHWT_F2 le 3540))      then pregoutothf='1' ;
+else if (GEST_WK2=34 and sex = '2' and racehisp = '2' and BIRTHWT_F2 gt 3540)                               then pregoutothf='3' ;
+
+else if (GEST_WK2=35 and sex = '2' and racehisp = '2' and BIRTHWT_F2 le 1829)                               then pregoutothf='2' ;
+else if (GEST_WK2=35 and sex = '2' and racehisp = '2' and (BIRTHWT_F2 ge 1830 and BIRTHWT_F2 le 3402))      then pregoutothf='1' ;
+else if (GEST_WK2=35 and sex = '2' and racehisp = '2' and BIRTHWT_F2 gt 3402)                               then pregoutothf='3' ;
+
+else if (GEST_WK2=36 and sex = '2' and racehisp = '2' and BIRTHWT_F2 le 2159)                               then pregoutothf='2' ;
+else if (GEST_WK2=36 and sex = '2' and racehisp = '2' and (BIRTHWT_F2 ge 2160 and BIRTHWT_F2 le 3487))      then pregoutothf='1' ;
+else if (GEST_WK2=36 and sex = '2' and racehisp = '2' and BIRTHWT_F2 gt 3487)                               then pregoutothf='3' ;
+
+else if (GEST_WK2=37 and sex = '2' and racehisp = '2' and BIRTHWT_F2 le 2380)                               then pregoutothf='5' ;
+else if (GEST_WK2=37 and sex = '2' and racehisp = '2' and (BIRTHWT_F2 ge 2381 and BIRTHWT_F2 le 3581))      then pregoutothf='4' ;
+else if (GEST_WK2=37 and sex = '2' and racehisp = '2' and BIRTHWT_F2 gt 3581)                               then pregoutothf='6' ;
+
+else if (GEST_WK2=38 and sex = '2' and racehisp = '2' and BIRTHWT_F2 le 2534)                               then pregoutothf='5' ;
+else if (GEST_WK2=38 and sex = '2' and racehisp = '2' and (BIRTHWT_F2 ge 2535 and BIRTHWT_F2 le 3615))      then pregoutothf='4' ;
+else if (GEST_WK2=38 and sex = '2' and racehisp = '2' and BIRTHWT_F2 gt 3615)                               then pregoutothf='6' ;
+
+else if (GEST_WK2=39 and sex = '2' and racehisp = '2' and BIRTHWT_F2 le 2734)                               then pregoutothf='5' ;
+else if (GEST_WK2=39 and sex = '2' and racehisp = '2' and (BIRTHWT_F2 ge 2735 and BIRTHWT_F2 le 3912))      then pregoutothf='4' ;
+else if (GEST_WK2=39 and sex = '2' and racehisp = '2' and BIRTHWT_F2 gt 3912)                               then pregoutothf='6' ;
+
+else if (GEST_WK2=40 and sex = '2' and racehisp = '2' and BIRTHWT_F2 le 2829)                               then pregoutothf='5' ;
+else if (GEST_WK2=40 and sex = '2' and racehisp = '2' and (BIRTHWT_F2 ge 2830 and BIRTHWT_F2 le 3860))      then pregoutothf='4' ;
+else if (GEST_WK2=40 and sex = '2' and racehisp = '2' and BIRTHWT_F2 gt 3860)                               then pregoutothf='6' ;
+
+else if (GEST_WK2=41 and sex = '2' and racehisp = '2' and BIRTHWT_F2 le 2839)                               then pregoutothf='5' ;
+else if (GEST_WK2=41 and sex = '2' and racehisp = '2' and (BIRTHWT_F2 ge 2840 and BIRTHWT_F2 le 3940))      then pregoutothf='4' ;
+else if (GEST_WK2=41 and sex = '2' and racehisp = '2' and BIRTHWT_F2 gt 3940)                               then pregoutothf='6' ;
+
+else if (GEST_WK2=42 and sex = '2' and racehisp = '2' and BIRTHWT_F2 le 2800)                               then pregoutothf='8' ;
+else if (GEST_WK2=42 and sex = '2' and racehisp = '2' and (BIRTHWT_F2 ge 2801 and BIRTHWT_F2 le 3921))      then pregoutothf='7' ;
+else if (GEST_WK2=42 and sex = '2' and racehisp = '2' and BIRTHWT_F2 gt 3921)                               then pregoutothf='9' ;
+
+else if (GEST_WK2=43 and sex = '2' and racehisp = '2' and BIRTHWT_F2 le 2687)                               then pregoutothf='8' ;
+else if (GEST_WK2=43 and sex = '2' and racehisp = '2' and (BIRTHWT_F2 ge 2688 and BIRTHWT_F2 le 3900))      then pregoutothf='7' ;
+else if (GEST_WK2=43 and sex = '2' and racehisp = '2' and BIRTHWT_F2 gt 3900)                               then pregoutothf='9' ;
+
+else if (GEST_WK2=44 and sex = '2' and racehisp = '2' and BIRTHWT_F2 le 2794)                               then pregoutothf='8' ;
+else if (GEST_WK2=44 and sex = '2' and racehisp = '2' and (BIRTHWT_F2 ge 2795 and BIRTHWT_F2 le 3997))      then pregoutothf='7' ;
+else if (GEST_WK2=44 and sex = '2' and racehisp = '2' and BIRTHWT_F2 gt 3997)                               then pregoutothf='9' ;
+
+
+if GEST_WK2 = . then pregoutothf= '0';
+if BIRTHWT_F2= . then pregoutothf= '0';
+if (GEST_WK2 < 20 or GEST_WK2 > 50) then pregoutothf= '0';
+if (BIRTHWT_F2< 300 or BIRTHWT_F2> 9000) then pregoutothf= '0';
+
+RUN;
+DATA LINK4;
+	SET LINK3;
+
+/*Listed below are from generation2*/
+IF pregoutwf in (2, 5, 8) THEN SGAWF_G2 = 1;/*SGA*/
+ELSE IF pregoutwf in (1, 3, 4, 6, 7, 9) THEN SGAWF_G2 = 0; /*ACCEPTABLE (APPROPRIATE) */
+
+IF pregoutbf in (2, 5, 8) THEN SGABF_G2 = 1;/*SGA*/
+ELSE IF pregoutbf in (1, 3, 4, 6, 7, 9) THEN SGABF_G2 = 0; /*ACCEPTABLE (APPROPRIATE) */
+
+IF pregoutothf in (2, 5, 8) THEN SGAHF_G2 = 1;/*SGA*/
+ELSE IF pregoutothf in (1, 3, 4, 6, 7, 9) THEN SGAHF_G2 = 0; /*ACCEPTABLE (APPROPRIATE) */
+
+IF pregoutwm in (2, 5, 8) THEN SGAWM = 1;/*SGA*/
+ELSE IF pregoutwm in (1, 4, 7, 3, 6, 9) THEN SGAWM = 0; /*ACCEPTABLE (APPROPRIATE) */
+
+IF pregoutbm in (2, 5, 8) THEN SGABM = 1;/*SGA*/
+ELSE IF pregoutbm in (1, 4, 7, 3, 6, 9) THEN SGABM = 0; /*ACCEPTABLE (APPROPRIATE) */
+
+IF pregouthm in (2, 5, 8) THEN SGAHM = 1;/*SGA*/
+ELSE IF pregouthm in (1, 4, 7, 3, 6, 9) THEN SGAHM = 0; /*ACCEPTABLE (APPROPRIATE) */
+
+RUN;
+
+/**sga**/
+PROC FREQ DATA = LINK4;
+TABLES SGAWF_G2 SGABF_G2 SGAHF_G2 SGAWM SGABM SGAHM;
+*tables ptb_cat*RACEHISP;
+RUN;
+/*ptbcat*/
+
+proc freq data = livefnh1; tables SAM_PTB4;run;
+proc print data = link2;
+var clin_est_gest MAT_COMBGEST gest_wk2;
+where gest_wk2 eq .;
+run;
+
+/*Overall table 1*/
+
+PROC FREQ DATA = LINK4;
+TABLES (PTB_CAT MAT_meduc MAT_meduc3 MAT_Feduc MAT_Feduc3 MAT_married MAT_LBW MAT_MAGE6 MAT_Kessner)*RACEHISP;
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+
+PROC FREQ DATA = LINK2;
+TABLES PTB_CAT clin_est_gest gest_wk2 MAT_PTB4 MAT_YY MAT_DD MAT_MM;
+TITLE "Grandmothers PTB by race among women delivering between 1999-2011";
+FORMAT RACEHISP fmrace. PTB_CAT fy1n0x.;
+RUN;
+/*BY table 2 RACE & ETHNICITY for PTB*/
+
+/**WNH*/
+PROC FREQ DATA = LINK4;
+TABLES PTB_CAT * ( MAT_meduc MAT_Feduc MAT_Kessner )/trend measures cl;
+WHERE RACEHISP EQ 0;
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+PROC FREQ DATA = LINK4;
+TABLES PTB_CAT * (MAT_married MAT_LBW MAT_MAGE6  )/CHISQ ;
+WHERE RACEHISP EQ 0;
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+
+/**BNH*/
+PROC FREQ DATA = LINK4;
+TABLES PTB_CAT * ( MAT_meduc MAT_Feduc MAT_Kessner )/trend measures cl;
+WHERE RACEHISP EQ 1;
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+PROC FREQ DATA = LINK4;
+TABLES PTB_CAT * (MAT_married MAT_LBW MAT_MAGE6  )/CHISQ ;
+WHERE RACEHISP EQ 1;
+TITLE "Mothers Low birthweight by race among women delivering between 1999-2011";
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+
+/***hisp***/
+PROC FREQ DATA = LINK4;
+TABLES PTB_CAT * (MAT_meduc MAT_Feduc MAT_Kessner )/trend measures cl;
+WHERE RACEHISP EQ 2;
+TITLE "Mothers Low birthweight by race among women delivering between 1999-2011";
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+PROC FREQ DATA = LINK4;
+TABLES PTB_CAT * (MAT_married MAT_LBW MAT_MAGE6  )/CHISQ ;
+WHERE RACEHISP EQ 2;
+TITLE "Mothers Low birthweight by race among women delivering between 1999-2011";
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+PROC FREQ DATA = LINK4;
+TABLES SEX;RUN;
+/**********************PTB By R&E AND GENDER********************/
+/**WNH FOR MALES*/
+PROC FREQ DATA = LINK4;
+TABLES PTB_CAT * (MAT_meduc MAT_Feduc MAT_Kessner )/trend measures cl;
+WHERE RACEHISP EQ 0 AND SEX EQ '1';
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+PROC FREQ DATA = LINK4;
+TABLES PTB_CAT * (MAT_married MAT_LBW MAT_MAGE6)/trend measures cl;
+WHERE RACEHISP EQ 0 AND SEX EQ '1';
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+/**WNH FOR FEMALES*/
+PROC FREQ DATA = LINK4;
+TABLES PTB_CAT * (MAT_meduc MAT_Feduc MAT_Kessner )/CHISQ ;
+WHERE RACEHISP EQ 0 AND SEX EQ '2';
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+PROC FREQ DATA = LINK4;
+TABLES PTB_CAT * (MAT_married MAT_LBW MAT_MAGE6)/CHISQ ;
+WHERE RACEHISP EQ 0 AND SEX EQ '2';;
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+/**BNH FOR MALES*/
+PROC FREQ DATA = LINK4;
+TABLES PTB_CAT * (MAT_meduc MAT_Feduc MAT_Kessner )/trend measures cl;
+WHERE RACEHISP EQ 1 AND SEX EQ '1';
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+PROC FREQ DATA = LINK4;
+TABLES PTB_CAT * (MAT_married MAT_LBW MAT_MAGE6)/trend measures cl;
+WHERE RACEHISP EQ 1 AND SEX EQ '1';
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+/**BNH FOR FEMALES*/
+PROC FREQ DATA = LINK4;
+TABLES PTB_CAT * (MAT_meduc MAT_Feduc MAT_Kessner )/CHISQ ;
+WHERE RACEHISP EQ 1 AND SEX EQ '2';
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+PROC FREQ DATA = LINK4;
+TABLES PTB_CAT * (MAT_married MAT_LBW MAT_MAGE6)/CHISQ ;
+WHERE RACEHISP EQ 1 AND SEX EQ '2';;
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+
+/**HISP FOR MALES*/
+PROC FREQ DATA = LINK4;
+TABLES PTB_CAT * (MAT_meduc MAT_Feduc MAT_Kessner )/trend measures cl;
+WHERE RACEHISP EQ 2 AND SEX EQ '1';
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+PROC FREQ DATA = LINK4;
+TABLES PTB_CAT * (MAT_married MAT_LBW MAT_MAGE6)/trend measures cl;
+WHERE RACEHISP EQ 2 AND SEX EQ '1';
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+/**HISP FOR FEMALES*/
+PROC FREQ DATA = LINK4;
+TABLES PTB_CAT * (MAT_meduc MAT_Feduc MAT_Kessner )/CHISQ ;
+WHERE RACEHISP EQ 2 AND SEX EQ '2';
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+PROC FREQ DATA = LINK4;
+TABLES PTB_CAT * (MAT_married MAT_LBW MAT_MAGE6)/CHISQ ;
+WHERE RACEHISP EQ 2 AND SEX EQ '2';;
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+
+/***************************************LBW By R&E AND GENDER********************/
+/**WNH FOR MALES*/
+PROC FREQ DATA = LINK4;
+TABLES MAT_LBW * (MAT_meduc MAT_Feduc MAT_Kessner )/trend measures cl;
+WHERE RACEHISP EQ 0 AND SEX EQ '1';
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+PROC FREQ DATA = LINK4;
+TABLES MAT_LBW * (MAT_married MAT_MAGE6)/trend measures cl;
+WHERE RACEHISP EQ 0 AND SEX EQ '1';
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+/**WNH FOR FEMALES*/
+PROC FREQ DATA = LINK4;
+TABLES MAT_LBW * (MAT_meduc MAT_Feduc MAT_Kessner )/CHISQ ;
+WHERE RACEHISP EQ 0 AND SEX EQ '2';
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+PROC FREQ DATA = LINK4;
+TABLES MAT_LBW * (MAT_married MAT_MAGE6)/CHISQ ;
+WHERE RACEHISP EQ 0 AND SEX EQ '2';;
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+/**BNH FOR MALES*/
+PROC FREQ DATA = LINK4;
+TABLES MAT_LBW * (MAT_meduc MAT_Feduc MAT_Kessner )/trend measures cl;
+WHERE RACEHISP EQ 1 AND SEX EQ '1';
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+PROC FREQ DATA = LINK4;
+TABLES MAT_LBW * (MAT_married MAT_MAGE6)/trend measures cl;
+WHERE RACEHISP EQ 1 AND SEX EQ '1';
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+/**BNH FOR FEMALES*/
+PROC FREQ DATA = LINK4;
+TABLES MAT_LBW * (MAT_meduc MAT_Feduc MAT_Kessner )/CHISQ ;
+WHERE RACEHISP EQ 1 AND SEX EQ '2';
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+PROC FREQ DATA = LINK4;
+TABLES MAT_LBW * (MAT_married MAT_MAGE6)/CHISQ ;
+WHERE RACEHISP EQ 1 AND SEX EQ '2';;
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+
+/**HISP FOR MALES*/
+PROC FREQ DATA = LINK4;
+TABLES MAT_LBW * (MAT_meduc MAT_Feduc MAT_Kessner )/trend measures cl;
+WHERE RACEHISP EQ 2 AND SEX EQ '1';
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+PROC FREQ DATA = LINK4;
+TABLES MAT_LBW * (MAT_married MAT_MAGE6)/trend measures cl;
+WHERE RACEHISP EQ 2 AND SEX EQ '1';
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+/**HISP FOR FEMALES*/
+PROC FREQ DATA = LINK4;
+TABLES MAT_LBW * (MAT_meduc MAT_Feduc MAT_Kessner )/CHISQ ;
+WHERE RACEHISP EQ 2 AND SEX EQ '2';
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+PROC FREQ DATA = LINK4;
+TABLES MAT_LBW * (MAT_married MAT_MAGE6)/CHISQ ;
+WHERE RACEHISP EQ 2 AND SEX EQ '2';;
+FORMAT RACEHISP fmrace. MAT_LBW fy1n0x. PTB_CAT fy1n0x.;;
+RUN;
+
+
+
+
+
+
+/*BY RACE & ETHNICITY for SGA*/
+
+PROC FREQ DATA = LINK4;
+TABLES SGAWF_G2 * (MAT_meduc3 MAT_Feduc MAT_Feduc3 MAT_married MAT_LBW MAT_MAGE6 MAT_Kessner)/trend measures cl;;
+RUN;
+
+PROC FREQ DATA = LINK4;
+TABLES SGABF_G2 * (MAT_meduc3 MAT_Feduc MAT_Feduc3 MAT_married MAT_LBW MAT_MAGE6 MAT_Kessner)/trend measures cl;;
+RUN;
+
+PROC FREQ DATA = LINK4;
+TABLES SGAHF_G2 * (MAT_meduc3 MAT_Feduc3 MAT_married MAT_LBW MAT_MAGE6 MAT_Kessner)/trend measures cl;;
+RUN;
+
