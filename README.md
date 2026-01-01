@@ -1,3 +1,2 @@
 # Mathematica
-Research Intern @ Mathematica Inc
-Python code
+Python code for Mathematica Internship
