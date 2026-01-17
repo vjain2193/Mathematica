@@ -1,2 +1,2 @@
 # Mathematica
-Python code for Mathematica Internship
+Code for Mathematica Internship
