@@ -1,0 +1,21 @@
+{
+  "_captured_at": "2026-07-11T06:50:00Z",
+  "_captured_run_id": "r_4e619be5861e461bb62aa9211adef851",
+  "status": "ok",
+  "exit_code": 0,
+  "log_contains": [
+    "NOTE: FORMAT fPTBRE defined (3 ranges).",
+    "NOTE: FORMAT $RACEETH defined (4 ranges).",
+    "NOTE: DATA livefnh1",
+    "NOTE: Wrote livefnh1 (10 rows, 20 columns).",
+    "NOTE: PROC FREQ statement used."
+  ],
+  "log_does_not_contain": [
+    "ERROR:",
+    "[JENNER-ERROR"
+  ],
+  "diagnostics": {
+    "parse_warnings": [],
+    "runtime_warnings": []
+  }
+}

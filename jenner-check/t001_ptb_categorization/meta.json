@@ -1,0 +1,7 @@
+{
+  "bundle": "t001_ptb_categorization",
+  "source_file": "Checksondata_30916.sas",
+  "source_blob_sha": "fb52ec5ba21869069ed77a99ae6bf58d61641b20",
+  "source_commit": "f76d93749f3f3d6915d2ae2a10f51819c7f828be",
+  "notes": "PTB (preterm birth) gestational-week categorization and race/ethnicity recoding from the author's dissertation cohort script. Original LIBNAME VA pointed at a private local dissertation dataset (Matching_762015); replaced with an inline 20-row mock cohort carrying the same columns (SAM_WT, BWT, SAM_COMBGEST, MAT_COMBGEST, M_HISP, M_RACE) the script reads. PTB categorization, RACEHISP recoding, PROC SORT/MEANS/FREQ logic unchanged."
+}

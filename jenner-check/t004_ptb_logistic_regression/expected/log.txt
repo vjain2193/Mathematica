@@ -1,0 +1,50 @@
+
+NOTE: Option OBS changed to 100.
+NOTE: DATA livefnh1
+
+NOTE: Processing inline DATALINES (16 lines)
+
+NOTE: Read 16 rows from DATALINES.
+NOTE: Wrote livefnh1 (16 rows, 6 columns).
+NOTE: DATA elapsed:
+  wall  0.00 seconds
+  cpu   0.00 seconds
+NOTE: DATA BIN_REG
+
+
+NOTE: Read 16 rows from livefnh1.
+NOTE: Wrote BIN_REG (16 rows, 10 columns).
+NOTE: DATA elapsed:
+  wall  0.00 seconds
+  cpu   0.00 seconds
+NOTE: PROC FREQ
+NOTE: ODS plot written: freq_mosaic_ptb_cat1_sam_meduc3.spec.json
+NOTE: PROC FREQ statement used.
+NOTE: PROC LOGISTIC data=BIN_REG
+
+NOTE: Using Python statsmodels.api.Logit version 0.14.6
+NOTE: ODS plot written: logistic_oddsratio.spec.json
+NOTE: ODS plot written: logistic_roc.spec.json
+NOTE: PROC LOGISTIC ODS Graphics generated.
+NOTE: PROC LOGISTIC completed. Results written to: ./ods_output/logistic_results.spec.json
+NOTE: PROC LOGISTIC data=BIN_REG
+
+NOTE: Using Python statsmodels.api.Logit version 0.14.6
+NOTE: ODS plot written: logistic_oddsratio.spec.json
+NOTE: ODS plot written: logistic_roc.spec.json
+NOTE: PROC LOGISTIC ODS Graphics generated.
+NOTE: PROC LOGISTIC completed. Results written to: ./ods_output/logistic_results.spec.json
+NOTE: PROC LOGISTIC data=BIN_REG
+
+NOTE: Using Python statsmodels.api.Logit version 0.14.6
+NOTE: ODS plot written: logistic_oddsratio.spec.json
+NOTE: ODS plot written: logistic_roc.spec.json
+NOTE: PROC LOGISTIC ODS Graphics generated.
+NOTE: PROC LOGISTIC completed. Results written to: ./ods_output/logistic_results.spec.json
+NOTE: PROC LOGISTIC data=BIN_REG
+
+NOTE: Using Python statsmodels.api.Logit version 0.14.6
+NOTE: ODS plot written: logistic_oddsratio.spec.json
+NOTE: ODS plot written: logistic_roc.spec.json
+NOTE: PROC LOGISTIC ODS Graphics generated.
+NOTE: PROC LOGISTIC completed. Results written to: ./ods_output/logistic_results.spec.json

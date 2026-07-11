@@ -1,0 +1,7 @@
+{
+  "bundle": "t004_ptb_logistic_regression",
+  "source_file": "Chap2_g1_regression.sas",
+  "source_blob_sha": "eb98b1971a8f25991439050807423b38b99c8b26",
+  "source_commit": "f76d93749f3f3d6915d2ae2a10f51819c7f828be",
+  "notes": "RACEHISP / SAM_MAGE3 / SAM_meduc3 recoding and unadjusted + adjusted PROC LOGISTIC regressions on preterm-birth outcome (PTB_CAT1), from the 'Regression analysis' section near the end of the author's generation-1 regression script (~600 lines; original built BIN_REG from a LIBNAME-backed livefnh1 pointing at private local dissertation data). Bundle uses a 16-row inline mock cohort carrying PTB_CAT1 and the raw maternal fields the BIN_REG DATA step recodes, and a representative slice of 4 of the ~15 PROC LOGISTIC calls in the source (one per predictor plus one adjusted two-predictor model), all using the author's own CLASS ... (param=ref ref=\"...\") reference-coding style."
+}

@@ -1,0 +1,78 @@
+                                                   The FREQ Procedure
+
+-------------------------------------------------------- CNUM=1 --------------------------------------------------------
+
+                                     Cumulative    Cumulative
+alname1    Frequency    Percent     Frequency      Percent
+----------------------------------------------------------------
+Smith              2    100.00            2       100.00
+
+                                     Cumulative    Cumulative
+afname1    Frequency    Percent     Frequency      Percent
+----------------------------------------------------------------
+Jane               2    100.00            2       100.00
+
+                                     Cumulative    Cumulative
+blname1    Frequency    Percent     Frequency      Percent
+----------------------------------------------------------------
+Smith              2    100.00            2       100.00
+
+                                     Cumulative    Cumulative
+bfname1    Frequency    Percent     Frequency      Percent
+----------------------------------------------------------------
+Robert             2    100.00            2       100.00
+
+-------------------------------------------------------- CNUM=3 --------------------------------------------------------
+
+                                     Cumulative    Cumulative
+alname1    Frequency    Percent     Frequency      Percent
+----------------------------------------------------------------
+Diaz               3    100.00            3       100.00
+
+                                     Cumulative    Cumulative
+afname1    Frequency    Percent     Frequency      Percent
+----------------------------------------------------------------
+Elena              3    100.00            3       100.00
+
+                                     Cumulative    Cumulative
+blname1    Frequency    Percent     Frequency      Percent
+----------------------------------------------------------------
+Diaz               3    100.00            3       100.00
+
+                                     Cumulative    Cumulative
+bfname1    Frequency    Percent     Frequency      Percent
+----------------------------------------------------------------
+Luis               3    100.00            3       100.00
+
+-------------------------------------------------------- CNUM=5 --------------------------------------------------------
+
+                                     Cumulative    Cumulative
+alname1    Frequency    Percent     Frequency      Percent
+----------------------------------------------------------------
+Patel              2    100.00            2       100.00
+
+                                     Cumulative    Cumulative
+afname1    Frequency    Percent     Frequency      Percent
+----------------------------------------------------------------
+Asha               2    100.00            2       100.00
+
+                                     Cumulative    Cumulative
+blname1    Frequency    Percent     Frequency      Percent
+----------------------------------------------------------------
+Patel              2    100.00            2       100.00
+
+                                     Cumulative    Cumulative
+bfname1    Frequency    Percent     Frequency      Percent
+----------------------------------------------------------------
+Raj                2    100.00            2       100.00
+
+  Obs  alname1  bfname1  SAM_WT  CNUM  CHILD_FNAME  CHILD_LNAME   M_DOB  Plurality  SAM_BIRTHORDER
+-----  -------  -------  ------  ----  -----------  -----------  ------  ---------  --------------
+    1  Smith    Robert     3200     1  Ann          Smith        010180          1               2
+    2  Smith    Robert     3100     1  Beth         Smith        010180          1               2
+    3  Diaz     Luis       3300     3  Dora         Diaz         050182          1               2
+    4  Diaz     Luis       3050     3  Eli          Diaz         050182          1               2
+    5  Diaz     Luis       2950     3  Faye         Diaz         050182          1               3
+    6  Patel    Raj        3150     5  Hari         Patel        090180          1               2
+    7  Patel    Raj        3000     5  Ida          Patel        090180          1               2
+
