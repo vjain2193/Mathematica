@@ -1,0 +1,46 @@
+
+NOTE: Option OBS changed to 100.
+NOTE: PROC FORMAT library=WORK
+
+NOTE: FORMAT fy1n0x defined (2 ranges).
+NOTE: FORMAT fpresabs defined (2 ranges).
+NOTE: FORMAT fPTBRE defined (3 ranges).
+NOTE: FORMAT fmage6x defined (6 ranges).
+NOTE: FORMAT feduc6x defined (6 ranges).
+NOTE: FORMAT fmeduc3x defined (4 ranges).
+NOTE: FORMAT $fadeq defined (4 ranges).
+NOTE: FORMAT $gender defined (2 ranges).
+NOTE: FORMAT $RACEETH defined (4 ranges).
+NOTE: DATA CHAP_SRC
+
+NOTE: Processing inline DATALINES (10 lines)
+
+NOTE: Read 10 rows from DATALINES.
+NOTE: Wrote CHAP_SRC (10 rows, 9 columns).
+NOTE: DATA elapsed:
+  wall  0.00 seconds
+  cpu   0.00 seconds
+NOTE: DATA livefnh1
+
+
+NOTE: Read 10 rows from CHAP_SRC.
+NOTE: Wrote livefnh1 (10 rows, 20 columns).
+NOTE: DATA elapsed:
+  wall  0.00 seconds
+  cpu   0.00 seconds
+NOTE: PROC FREQ
+NOTE: ODS plot written: freq_racehisp.spec.json
+NOTE: ODS plot written: freq_sam_mage.spec.json
+NOTE: ODS plot written: freq_sam_meduc.spec.json
+NOTE: ODS plot written: freq_sam_feduc.spec.json
+NOTE: ODS plot written: freq_ptb_cat1.spec.json
+NOTE: ODS plot written: freq_sam_kessner.spec.json
+NOTE: ODS plot written: freq_sam_married.spec.json
+NOTE: PROC FREQ statement used.
+NOTE: PROC FREQ
+NOTE: ODS plot written: freq_mosaic_sam_mage_racehisp.spec.json
+NOTE: ODS plot written: freq_mosaic_sam_meduc_racehisp.spec.json
+NOTE: ODS plot written: freq_mosaic_sam_feduc_racehisp.spec.json
+NOTE: ODS plot written: freq_mosaic_sam_married_racehisp.spec.json
+NOTE: ODS plot written: freq_mosaic_sam_kessner_racehisp.spec.json
+NOTE: PROC FREQ statement used.

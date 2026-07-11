@@ -1,0 +1,7 @@
+{
+  "bundle": "t003_sibling_matching",
+  "source_file": "Chap1_g1_all tables.sas",
+  "source_blob_sha": "a73b25653c4c5f5333516b6196cf8fdf127b5c7a",
+  "source_commit": "f76d93749f3f3d6915d2ae2a10f51819c7f828be",
+  "notes": "Sibling-record flagging technique from the author's 'find sibship records only in generation 1' section: PROC SORT by last name and temp id, then a first.-variable BY-group pass that increments a counter each time a new temp id appears under the same last name, followed by a merge back onto the original data to keep only flagged siblings. Original LIBNAME VA/AK pointed at private local matching data; replaced with a 10-row inline mock cohort (3 sibling families + 3 singleton families) shaped so the BY-group logic has real sibling groups to find. The undefined-dataset PROC FREQ DATA=CHECK fragment earlier in the same source file (CHECK is never created) was left out -- that's a script bug, not part of the technique being tested."
+}

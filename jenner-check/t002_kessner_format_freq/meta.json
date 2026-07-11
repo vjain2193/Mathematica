@@ -1,0 +1,7 @@
+{
+  "bundle": "t002_kessner_format_freq",
+  "source_file": "Chap1_g1_overall_raceethn_edu.sas",
+  "source_blob_sha": "6517b7f0909ab6008b3b264f8207e6edcca1c1bd",
+  "source_commit": "f76d93749f3f3d6915d2ae2a10f51819c7f828be",
+  "notes": "PROC FORMAT value-label sets, maternal age/education recoding, and the Kessner Index of adequacy of prenatal care computation from the author's generation-1 descriptive analysis script. Original LIBNAME DT/VA pointed at private local dissertation data; replaced with a 10-row inline mock cohort carrying the columns the DATA step reads. RACEHISP is reported with $RACEETH. (defined in this file's own PROC FORMAT block) rather than the original's fmrace. reference, which is never defined anywhere in the repository -- an undefined-format bug in the source script we did not carry forward."
+}

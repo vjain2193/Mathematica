@@ -1,0 +1,246 @@
+                                                   The FREQ Procedure
+
+Table of PTB_CAT1 by SAM_meduc3
+
+PTB_CAT1 |         0 |         1 |         2 |      Total
+---------+-----------+-----------+-----------+-----------
+0        |         0 |         0 |         2 |          2
+         |      0.00 |      0.00 |     40.00 |      40.00
+         |      0.00 |      0.00 |    100.00 |     100.00
+         |      0.00 |      0.00 |    100.00 |      40.00
+---------+-----------+-----------+-----------+-----------
+1        |         2 |         1 |         0 |          3
+         |     40.00 |     20.00 |      0.00 |      60.00
+         |     66.67 |     33.33 |      0.00 |     100.00
+         |    100.00 |    100.00 |      0.00 |      60.00
+---------+-----------+-----------+-----------+-----------
+Total    |         2 |         1 |         2 |          5
+
+Statistics for Table of PTB_CAT1 by SAM_meduc3
+
+Statistic                             Value          ASE
+--------------------------------------------------------
+Phi Coefficient                      1.0000
+Cramer's V                           1.0000
+Contingency Coefficient              0.7071
+Gamma                               -1.0000
+Kendall's Tau-b                     -0.8660
+Stuart's Tau-c                      -0.9600
+Somers' D C|R (SMDCR)               -1.0000
+Somers' D R|C (SMDRC)               -0.7500
+Pearson Correlation                 -0.9129
+Spearman Correlation                -0.9129
+
+
+Cochran-Armitage Trend Test
+
+Chi-Square                           4.1667
+Pr > ChiSq                           0.0412
+
+                                     
+---------------------------  --------
+Number of Observations Read        16
+Number of Observations Used        16
+
+            Response Profile            
+  Probability modeled is PTB_CAT1='1'   
+
+Ordered Value  PTB_CAT1  Total Frequency
+-------------  --------  ---------------
+            1  0                       8
+            2  1                       8
+
+  Class Level Information   
+
+Class       Levels  Values  
+--------  --------  --------
+RACEHISP         3  0 1 2   
+
+                                             
+---------------------------------------------
+Convergence criterion (GCONV=1E-8) satisfied.
+
+The LOGISTIC Procedure
+Response Variable: PTB_CAT1
+
+Criterion     Value
+---------  --------
+AIC          26.790
+-2 Log L     20.790
+SC           29.107
+
+            Analysis of Maximum Likelihood Estimates            
+
+Parameter  Estimate  Standard Error  Wald Chi-Square  Pr > ChiSq
+---------  --------  --------------  ---------------  ----------
+Intercept    0.4055          0.9129           0.1973      0.6569
+RACEHISP    -1.5041          1.4720           1.0441      0.3069
+RACEHISP    -0.1178          1.1902           0.0098      0.9212
+
+                     Odds Ratio Estimates                     
+
+Effect    Point Estimate  95% Wald CL Lower  95% Wald CL Upper
+--------  --------------  -----------------  -----------------
+RACEHISP           0.222              0.012              3.979
+RACEHISP           0.889              0.086              9.162
+
+                                     
+---------------------------  --------
+Number of Observations Read        16
+Number of Observations Used        16
+
+            Response Profile            
+  Probability modeled is PTB_CAT1='1'   
+
+Ordered Value  PTB_CAT1  Total Frequency
+-------------  --------  ---------------
+            1  0                       8
+            2  1                       8
+
+   Class Level Information    
+
+Class        Levels  Values   
+---------  --------  ---------
+SAM_MAGE3         5  1 2 3 4 5
+
+                                    
+------------------------------------
+WARNING: The model did not converge.
+
+                                                                                                                     
+---------------------------------------------------------------------------------------------------------------------
+WARNING: There is possibly a quasi-complete separation of data points. The maximum likelihood estimate may not exist.
+
+The LOGISTIC Procedure
+Response Variable: PTB_CAT1
+
+Criterion     Value
+---------  --------
+AIC          17.566
+-2 Log L      7.566
+SC           21.429
+
+            Analysis of Maximum Likelihood Estimates            
+
+Parameter  Estimate  Standard Error  Wald Chi-Square  Pr > ChiSq
+---------  --------  --------------  ---------------  ----------
+Intercept   -0.8473          1.0911           0.6030      0.4374
+SAM_MAGE3    2.4567          2.1887           1.2599      0.2617
+SAM_MAGE3    3.2452          1.9516           2.7651      0.0963
+SAM_MAGE3   -1.3499          1.9920           0.4592      0.4980
+SAM_MAGE3   -0.2511          2.5541           0.0097      0.9217
+
+                     Odds Ratio Estimates                      
+
+Effect     Point Estimate  95% Wald CL Lower  95% Wald CL Upper
+---------  --------------  -----------------  -----------------
+SAM_MAGE3          11.667              0.160            851.108
+SAM_MAGE3          25.667              0.560           1176.403
+SAM_MAGE3           0.259              0.005             12.864
+SAM_MAGE3           0.778              0.005            116.137
+
+                                     
+---------------------------  --------
+Number of Observations Read        16
+Number of Observations Used        16
+
+            Response Profile            
+  Probability modeled is PTB_CAT1='1'   
+
+Ordered Value  PTB_CAT1  Total Frequency
+-------------  --------  ---------------
+            1  0                       8
+            2  1                       8
+
+    Class Level Information    
+
+Class          Levels  Values  
+-----------  --------  --------
+SAM_married         2  0 1     
+
+                                             
+---------------------------------------------
+Convergence criterion (GCONV=1E-8) satisfied.
+
+                                                                                                                     
+---------------------------------------------------------------------------------------------------------------------
+WARNING: There is possibly a quasi-complete separation of data points. The maximum likelihood estimate may not exist.
+
+The LOGISTIC Procedure
+Response Variable: PTB_CAT1
+
+Criterion     Value
+---------  --------
+AIC          11.298
+-2 Log L      7.298
+SC           12.843
+
+             Analysis of Maximum Likelihood Estimates             
+
+Parameter    Estimate  Standard Error  Wald Chi-Square  Pr > ChiSq
+-----------  --------  --------------  ---------------  ----------
+Intercept     -1.7346          0.9335           3.4526      0.0632
+SAM_married    4.4427          1.8192           5.9637      0.0146
+
+                      Odds Ratio Estimates                       
+
+Effect       Point Estimate  95% Wald CL Lower  95% Wald CL Upper
+-----------  --------------  -----------------  -----------------
+SAM_married          85.000              2.404           3005.663
+
+                                     
+---------------------------  --------
+Number of Observations Read        16
+Number of Observations Used        16
+
+            Response Profile            
+  Probability modeled is PTB_CAT1='1'   
+
+Ordered Value  PTB_CAT1  Total Frequency
+-------------  --------  ---------------
+            1  0                       8
+            2  1                       8
+
+   Class Level Information    
+
+Class         Levels  Values  
+----------  --------  --------
+SAM_meduc3         3  0 1 2   
+RACEHISP           3  0 1 2   
+
+                                             
+---------------------------------------------
+Convergence criterion (GCONV=1E-8) satisfied.
+
+                                                                                                                     
+---------------------------------------------------------------------------------------------------------------------
+WARNING: There is possibly a quasi-complete separation of data points. The maximum likelihood estimate may not exist.
+
+The LOGISTIC Procedure
+Response Variable: PTB_CAT1
+
+Criterion     Value
+---------  --------
+AIC          14.604
+-2 Log L      4.604
+SC           18.467
+
+            Analysis of Maximum Likelihood Estimates             
+
+Parameter   Estimate  Standard Error  Wald Chi-Square  Pr > ChiSq
+----------  --------  --------------  ---------------  ----------
+Intercept     0.6702          1.7313           0.1499      0.6987
+SAM_meduc3    3.0031          1.9658           2.3338      0.1266
+SAM_meduc3   -2.0411          1.9921           1.0498      0.3056
+RACEHISP     -1.9332          2.2170           0.7604      0.3832
+RACEHISP     -1.5153          2.0216           0.5618      0.4535
+
+                      Odds Ratio Estimates                      
+
+Effect      Point Estimate  95% Wald CL Lower  95% Wald CL Upper
+----------  --------------  -----------------  -----------------
+SAM_meduc3          20.148              0.428            949.527
+SAM_meduc3           0.130              0.003              6.445
+RACEHISP             0.145              0.002             11.155
+RACEHISP             0.220              0.004             11.553
+
